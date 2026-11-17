@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game Insert Planner</title>
+<meta name="description" content="Plan foam board or plywood trays for a board game box. Enter the box, the components and your material to get a tray layout, a cut list and a full-size printable cutting template.">
+<meta property="og:title" content="Game Insert Planner">
+<meta property="og:description" content="Tray layout, cut list and a full-size printable cutting template for board game box inserts.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#245c49">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23245c49'/%3E%3Crect x='6' y='6' width='20' height='20' fill='none' stroke='%23e7f3ed' stroke-width='2'/%3E%3Cpath d='M16 6v20M6 16h10' stroke='%23e7f3ed' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  /* Layout: input rail on the left, results column on the right (one column under 960px). Workshop palette: cutting-mat green on a cool paper ground. */
+  --paper:#edf1ee; --surface:#fbfcfb; --ink:#16201b; --muted:#56635c; --line:#d2dad5; --field:#ffffff; --field-line:#bcc7c1;
+  --accent:#1d6a50; --accent-ink:#ffffff; --accent-soft:#d9eae2;
+  --warn:#9c4309; --warn-soft:#fbe9da;
+  --mat:#245c49; --mat-grid:#2f6b57; --mat-major:#4f8c75; --mat-ink:#e7f3ed; --hatch:#7fb19d;
+  /* Physical material colors: drawn on the mat, so they stay the same in both themes */
+  --foam:#f8f7f2; --foam-cav:#e1dfd3; --ply:#e9d2a3; --ply-cav:#d0b27c; --mdf:#b58f67; --mdf-cav:#977350;
+  --piece-edge:#3a3326; --piece-ink:#251f16;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#101513; --surface:#171e1b; --ink:#e3ebe7; --muted:#97a69f; --line:#2a3530; --field:#0f1412; --field-line:#3a4741;
+    --accent:#5fc49d; --accent-ink:#0b1a13; --accent-soft:#1b392d;
+    --warn:#f2a466; --warn-soft:#33210f;
+    --mat:#183f32; --mat-grid:#21503f; --mat-major:#3c7862; --mat-ink:#d6ebe1; --hatch:#4f8a73;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101513; --surface:#171e1b; --ink:#e3ebe7; --muted:#97a69f; --line:#2a3530; --field:#0f1412; --field-line:#3a4741;
+  --accent:#5fc49d; --accent-ink:#0b1a13; --accent-soft:#1b392d;
+  --warn:#f2a466; --warn-soft:#33210f;
+  --mat:#183f32; --mat-grid:#21503f; --mat-major:#3c7862; --mat-ink:#d6ebe1; --hatch:#4f8a73;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 72px}
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 32px;padding-bottom:18px;margin-bottom:24px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-family:var(--f-display);font-stretch:118%;font-weight:800;font-size:clamp(30px,5vw,50px);line-height:1;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.lede{max-width:48ch;color:var(--muted);margin:0}
+h2{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:18px;line-height:1.2;margin:0;text-wrap:balance}
+.app{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:960px){.app{grid-template-columns:minmax(0,1fr)}}
+.inputs{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel,.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.panel-head,.card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-bottom:12px}
+.sub{color:var(--muted);font-size:13.5px;margin:2px 0 0}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fields.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stack{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.field label .u{text-transform:none;letter-spacing:0;font-weight:500}
+input[type=number],input[type=text],select{width:100%;font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--field-line);border-radius:6px;background:var(--field);color:var(--ink);min-width:0}
+input[type=number]{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.seg{display:inline-flex;border:1px solid var(--field-line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-family:var(--f-mono);font-size:12.5px;padding:4px 12px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.comp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 8px;padding:12px 0;border-top:1px solid var(--line)}
+.comp:first-child{border-top:0;padding-top:0}
+.name-row{grid-column:1/-1;display:flex;gap:8px;align-items:center}
+.name-row input{flex:1}
+.icon-btn{flex:none;width:32px;height:32px;border-radius:6px;border:1px solid var(--field-line);background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.icon-btn:hover{color:var(--warn);border-color:var(--warn)}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{font:inherit;font-weight:600;font-size:13.5px;padding:7px 14px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:hover{filter:brightness(1.08)}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.check small{display:block;color:var(--muted);font-size:12.5px}
+.results{display:flex;flex-direction:column;gap:20px;min-width:0}
+.status{padding:12px 16px;border-radius:10px;font-weight:500}
+.status.ok{background:var(--accent-soft);color:var(--ink);border-left:4px solid var(--accent)}
+.status.warn{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn)}
+.status ul{margin:6px 0 0;padding-left:18px;font-weight:400;font-size:14px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0}
+.stat .v{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat .d{font-size:12.5px;color:var(--muted)}
+.figure{border-radius:8px;overflow:hidden;background:var(--mat)}
+.figure svg{display:block;width:100%;height:auto;max-height:78vh}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:6px;border:1px solid var(--piece-edge)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.qty{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:16px}
+.tag{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 6px;border-radius:5px;background:var(--ink);color:var(--paper);font-family:var(--f-mono);font-weight:600;font-size:12.5px}
+.tag.spare{background:transparent;color:var(--ink);border:1px dashed var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.chip{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);margin-left:6px;white-space:nowrap}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.sheet-cap{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-top:6px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.export{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;padding:12px;margin-bottom:14px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
+.export .field{flex:1 1 220px}
+.export .btn{flex:none}
+.export p{flex:1 1 100%;margin:0}
+.btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.empty{color:var(--muted);padding:24px 0;text-align:center}
+#copy-fallback{width:100%;min-height:120px;margin-top:10px;font-family:var(--f-mono);font-size:12.5px;background:var(--field);color:var(--ink);border:1px solid var(--field-line);border-radius:6px;padding:8px}
+.toast{font-size:13px;color:var(--accent);font-weight:600}
+svg line,svg rect{vector-effect:non-scaling-stroke}
+svg .mat{fill:var(--mat)}
+svg .gmin{stroke:var(--mat-grid);stroke-width:1}
+svg .gmaj{stroke:var(--mat-major);stroke-width:1}
+svg .boxwall{fill:none;stroke:var(--mat-ink);stroke-width:2.5}
+svg .wall,svg .piece{stroke:var(--piece-edge);stroke-width:1}
+svg .cav{stroke:var(--piece-edge);stroke-width:1;stroke-opacity:.45}
+svg .gap{stroke:var(--hatch);stroke-width:1;stroke-dasharray:3 3}
+svg .hl{stroke:var(--hatch);stroke-width:1}
+svg .sheet{stroke:var(--mat-ink);stroke-width:1.5}
+.k-foam .wall,.k-foam .piece{fill:var(--foam)} .k-foam .cav{fill:var(--foam-cav)}
+.k-ply .wall,.k-ply .piece{fill:var(--ply)} .k-ply .cav{fill:var(--ply-cav)}
+.k-mdf .wall,.k-mdf .piece{fill:var(--mdf)} .k-mdf .cav{fill:var(--mdf-cav)}
+.sw.k-foam{background:var(--foam)} .sw.k-ply{background:var(--ply)} .sw.k-mdf{background:var(--mdf)}
+.sw.cavsw.k-foam{background:var(--foam-cav)} .sw.cavsw.k-ply{background:var(--ply-cav)} .sw.cavsw.k-mdf{background:var(--mdf-cav)}
+.sw.gapsw{background:var(--mat);border:1px dashed var(--hatch)}
+svg text{font-family:var(--f-mono)}
+svg .t-letter{font-family:var(--f-display);font-weight:800;fill:var(--piece-ink)}
+svg .t-name{fill:var(--piece-ink)}
+svg .t-mat{fill:var(--mat-ink)}
+@media (prefers-reduced-motion:no-preference){.btn,.icon-btn{transition:filter .15s,color .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Foam board · plywood · MDF trays</p>
+      <h1>Game Insert Planner</h1>
+    </div>
+    <p class="lede">Give it the inside of the box, the pieces you need to store, and the material you cut. It lays out open-top trays, then builds the cut list and sheet layouts.</p>
+  </header>
+
+  <div class="app">
+    <aside class="inputs">
+      <section class="panel" aria-labelledby="h-box">
+        <div class="panel-head">
+          <h2 id="h-box">Box</h2>
+          <div class="seg" role="group" aria-label="Units">
+            <button type="button" id="unit-mm" data-unit="mm">mm</button>
+            <button type="button" id="unit-in" data-unit="in">in</button>
+          </div>
+        </div>
+        <div class="fields">
+          <div class="field"><label for="box-l">Length <span class="u"></span></label><input type="number" id="box-l" data-path="box.l" min="0" step="any" inputmode="decimal"></div>
+          <div class="field"><label for="box-w">Width <span class="u"></span></label><input type="number" id="box-w" data-path="box.w" min="0" step="any" inputmode="decimal"></div>
+          <div class="field"><label for="box-h">Depth <span class="u"></span></label><input type="number" id="box-h" data-path="box.h" min="0" step="any" inputmode="decimal"></div>
+        </div>
+        <div class="stack" style="margin-top:10px">
+          <div class="field"><label for="top-reserve">Space above trays <span class="u"></span></label><input type="number" id="top-reserve" data-path="topReserve" min="0" step="any" inputmode="decimal"></div>
+        </div>
+        <p class="hint">Measure the inside of the box bottom. Space above trays is for the game board, player mats and rulebook that lie on top.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-mat">
+        <div class="panel-head"><h2 id="h-mat">Material</h2></div>
+        <div class="stack">
+          <div class="field"><label for="material">Sheet material</label><select id="material"></select></div>
+          <div class="fields">
+            <div class="field"><label for="thickness">Thickness <span class="u"></span></label><input type="number" id="thickness" data-path="t" min="0" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="clearance">Clearance <span class="u"></span></label><input type="number" id="clearance" data-path="clearance" min="0" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="kerf">Kerf <span class="u"></span></label><input type="number" id="kerf" data-path="kerf" min="0" step="any" inputmode="decimal"></div>
+          </div>
+          <div class="field"><label for="sheet-preset">Sheet size</label><select id="sheet-preset"></select></div>
+          <div class="fields two">
+            <div class="field"><label for="sheet-l">Sheet length <span class="u"></span></label><input type="number" id="sheet-l" data-path="sheet.l" min="0" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="sheet-w">Sheet width <span class="u"></span></label><input type="number" id="sheet-w" data-path="sheet.w" min="0" step="any" inputmode="decimal"></div>
+          </div>
+        </div>
+        <p class="hint">Clearance is added to each component's length, width and height so pieces lift out easily. Kerf is the width of material your blade or saw removes.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-comp">
+        <div class="panel-head"><h2 id="h-comp">Components</h2><span class="muted small" id="comp-count"></span></div>
+        <div id="comps"></div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="add-comp">Add component</button>
+          <button type="button" class="btn ghost" id="clear-comps">Clear list</button>
+        </div>
+        <p class="hint">Enter the footprint and stack height of each thing that gets its own tray: a deck of cards, a pile of tokens, a bag of cubes. Qty makes that many identical trays.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-opt">
+        <div class="panel-head"><h2 id="h-opt">Layout</h2></div>
+        <div class="stack">
+          <div class="field"><label for="stack-mode">Stack shallow trays</label>
+            <select id="stack-mode">
+              <option value="auto">Only when needed to fit</option>
+              <option value="on">Whenever possible</option>
+              <option value="off">Never</option>
+            </select>
+          </div>
+          <label class="check"><input type="checkbox" id="level"><span>Level the tops<small>Deepen the top tray in each spot so everything finishes flush and the board lies flat.</small></span></label>
+          <label class="check"><input type="checkbox" id="fill"><span>Close the gaps<small>Widen trays into thin leftover strips and turn larger leftovers into spare trays, so nothing slides around.</small></span></label>
+          <label class="check"><input type="checkbox" id="rotate"><span>Pieces may rotate on the sheet<small>Turn off to keep every piece's length along the sheet length (wood grain).</small></span></label>
+        </div>
+        <div class="btn-row"><button type="button" class="btn ghost" id="load-example">Load the example</button></div>
+      </section>
+    </aside>
+
+    <main class="results" id="results" aria-live="polite">
+      <div id="status"></div>
+      <div class="summary" id="summary"></div>
+
+      <section class="card" aria-labelledby="h-plan">
+        <div class="card-head"><div><h2 id="h-plan">Layout from above</h2><p class="sub">Trays as they sit in the box. Letters match the tray table and the cut list.</p></div></div>
+        <div class="figure" id="plan"></div>
+        <div class="legend" id="plan-legend"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-trays">
+        <div class="card-head"><div><h2 id="h-trays">Trays</h2><p class="sub">Each tray is a base with four walls standing on it.</p></div></div>
+        <div class="tablewrap"><table id="tray-table"></table></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-cut">
+        <div class="card-head">
+          <div><h2 id="h-cut">Cut list</h2><p class="sub" id="cut-sub"></p></div>
+          <div style="display:flex;align-items:center;gap:10px"><span class="toast" id="copy-toast" hidden>Copied</span><button type="button" class="btn ghost" id="copy-cut">Copy for a spreadsheet</button></div>
+        </div>
+        <div class="tablewrap"><table id="cut-table"></table></div>
+        <textarea id="copy-fallback" readonly hidden aria-label="Cut list text to copy"></textarea>
+      </section>
+
+      <section class="card" aria-labelledby="h-sheets">
+        <div class="card-head"><div><h2 id="h-sheets">Sheet layout</h2><p class="sub" id="sheet-sub"></p></div></div>
+        <div class="export" id="pdf-tools" hidden>
+          <div class="field"><label for="pdf-paper">Print the cutting template on</label>
+            <select id="pdf-paper">
+              <option value="letter">Letter paper (8.5 × 11 in)</option>
+              <option value="a4">A4 paper</option>
+              <option value="tabloid">Tabloid paper (11 × 17 in)</option>
+              <option value="a3">A3 paper</option>
+              <option value="full">One full-size page per sheet (print shop)</option>
+            </select>
+          </div>
+          <button type="button" class="btn" id="pdf-btn">Download template (PDF)</button>
+          <p class="small muted" id="pdf-note"></p>
+          <p class="small" id="pdf-msg" role="status"></p>
+        </div>
+        <p class="small muted" id="pdf-unavailable" hidden>The full-size cutting template downloads when this page is open in Claude.</p>
+        <div class="sheets" id="sheets"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-build">
+        <div class="card-head"><h2 id="h-build">Assembly</h2></div>
+        <ol class="steps" id="steps"></ol>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* Pure layout logic: no DOM access. */
+window.InsertPlanner = (function(){
+  const EPS = 1e-6;
+
+  function makeFmt(unit){
+    return function(v){
+      if(!isFinite(v)) return '–';
+      if(unit === 'mm'){
+        const x = Math.round(v*10)/10;
+        return Math.abs(x - Math.round(x)) < 1e-9 ? String(Math.round(x)) : x.toFixed(1);
+      }
+      const n = Math.round(v*32), neg = n < 0, a = Math.abs(n);
+      const whole = Math.floor(a/32);
+      let num = a % 32, den = 32;
+      while(num && num % 2 === 0){ num /= 2; den /= 2; }
+      const s = num ? (whole ? whole + ' ' + num + '/' + den : num + '/' + den) : String(whole);
+      return (neg ? '−' : '') + s;
+    };
+  }
+
+  function fits(w, h, W, H){ return (w <= W + EPS && h <= H + EPS) || (h <= W + EPS && w <= H + EPS); }
+
+  function mergeFree(free){
+    let merged = true;
+    while(merged){
+      merged = false;
+      outer:
+      for(let i = 0; i < free.length; i++){
+        for(let j = i + 1; j < free.length; j++){
+          const a = free[i], b = free[j];
+          if(Math.abs(a.x - b.x) < EPS && Math.abs(a.w - b.w) < EPS){
+            if(Math.abs(a.y + a.h - b.y) < EPS){ a.h += b.h; free.splice(j,1); merged = true; break outer; }
+            if(Math.abs(b.y + b.h - a.y) < EPS){ a.y = b.y; a.h += b.h; free.splice(j,1); merged = true; break outer; }
+          }
+          if(Math.abs(a.y - b.y) < EPS && Math.abs(a.h - b.h) < EPS){
+            if(Math.abs(a.x + a.w - b.x) < EPS){ a.w += b.w; free.splice(j,1); merged = true; break outer; }
+            if(Math.abs(b.x + b.w - a.x) < EPS){ a.x = b.x; a.w += b.w; free.splice(j,1); merged = true; break outer; }
+          }
+        }
+      }
+    }
+  }
+
+  // Guillotine bin packing: best short side fit, shorter-leftover-axis split. Free rectangles never overlap.
+  function guillotine(BW, BH, items, allowRotate){
+    const free = [{x:0, y:0, w:BW, h:BH}];
+    const placed = [], unplaced = [];
+    for(const it of items){
+      let best = null;
+      for(let i = 0; i < free.length; i++){
+        const f = free[i];
+        const opts = [[it.w, it.h, false]];
+        if(allowRotate && Math.abs(it.w - it.h) > EPS) opts.push([it.h, it.w, true]);
+        for(const [w, h, rot] of opts){
+          if(w <= f.w + EPS && h <= f.h + EPS){
+            const s1 = Math.min(f.w - w, f.h - h), s2 = Math.max(f.w - w, f.h - h);
+            if(!best || s1 < best.s1 - EPS || (Math.abs(s1 - best.s1) <= EPS && s2 < best.s2)) best = {i, w, h, rot, s1, s2};
+          }
+        }
+      }
+      if(!best){ unplaced.push(it); continue; }
+      const f = free[best.i];
+      placed.push({ref: it.ref, x: f.x, y: f.y, w: best.w, h: best.h, rot: best.rot});
+      const dw = f.w - best.w, dh = f.h - best.h;
+      let a, b;
+      if(dw < dh){
+        a = {x: f.x + best.w, y: f.y, w: dw, h: best.h};
+        b = {x: f.x, y: f.y + best.h, w: f.w, h: dh};
+      } else {
+        a = {x: f.x + best.w, y: f.y, w: dw, h: f.h};
+        b = {x: f.x, y: f.y + best.h, w: best.w, h: dh};
+      }
+      free.splice(best.i, 1);
+      if(a.w > EPS && a.h > EPS) free.push(a);
+      if(b.w > EPS && b.h > EPS) free.push(b);
+      mergeFree(free);
+    }
+    return {placed, unplaced, free};
+  }
+
+  const maxArea = free => free.reduce((m, f) => Math.max(m, f.w*f.h), 0);
+
+  function letter(n){
+    let s = ''; n++;
+    while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1)/26); }
+    return s;
+  }
+
+  function layout(trays, stackOn, UL, UW, UH){
+    const sorted = trays.slice().sort((a, b) => (b.ox*b.oy - a.ox*a.oy) || (b.oz - a.oz));
+    const cols = [];
+    for(const tr of sorted){
+      let best = null;
+      if(stackOn){
+        for(const col of cols){
+          if(!fits(tr.ox, tr.oy, col.w, col.h)) continue;
+          if(col.z + tr.oz > UH + EPS) continue;
+          const ratio = (tr.ox*tr.oy)/(col.w*col.h);
+          if(ratio < 0.5) continue;
+          if(!best || ratio > best.ratio) best = {col, ratio};
+        }
+      }
+      if(best){ best.col.trays.push(tr); best.col.z += tr.oz; }
+      else cols.push({w: tr.ox, h: tr.oy, z: tr.oz, trays: [tr]});
+    }
+    const orders = [
+      (a, b) => b.w*b.h - a.w*a.h,
+      (a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h),
+      (a, b) => (b.w + b.h) - (a.w + a.h),
+      (a, b) => Math.min(b.w, b.h) - Math.min(a.w, a.h)
+    ];
+    let best = null;
+    for(const ord of orders){
+      for(const flip of [false, true]){
+        const items = cols.slice().sort(ord).map(col => ({w: col.w, h: col.h, ref: col}));
+        let r = flip ? guillotine(UW, UL, items, true) : guillotine(UL, UW, items, true);
+        if(flip){
+          r = {
+            placed: r.placed.map(p => ({ref: p.ref, x: p.y, y: p.x, w: p.h, h: p.w})),
+            free: r.free.map(f => ({x: f.y, y: f.x, w: f.h, h: f.w})),
+            unplaced: r.unplaced
+          };
+        }
+        const score = [r.unplaced.length, -maxArea(r.free)];
+        if(!best || score[0] < best.score[0] || (score[0] === best.score[0] && score[1] < best.score[1] - EPS)) best = Object.assign(r, {score});
+      }
+    }
+    return {placed: best.placed, free: best.free, unplacedCols: best.unplaced.map(i => i.ref)};
+  }
+
+  function compute(S){
+    const unit = S.unit, fmt = makeFmt(unit), U = unit;
+    const t = +S.t || 0, c = Math.max(0, +S.clearance || 0);
+    const warnings = [];
+    const res = {warnings, cols: [], trays: [], gaps: [], pieces: [], groups: [], sheets: [], unplaced: [], stackUsed: false, offset: c/2, sheetUse: 0};
+    const UL = (+S.box.l || 0) - c, UW = (+S.box.w || 0) - c, UH = (+S.box.h || 0) - (+S.topReserve || 0);
+    Object.assign(res, {UL, UW, UH, t});
+    if(!(S.box.l > 0 && S.box.w > 0 && S.box.h > 0)){ warnings.push('Enter the inside length, width and depth of the box.'); return res; }
+    if(!(t > 0)){ warnings.push('Material thickness has to be more than zero.'); return res; }
+    if(UH <= t){ warnings.push('Only ' + fmt(UH) + ' ' + U + ' of depth is left for trays. Reduce the space above trays.'); return res; }
+    const minCav = unit === 'mm' ? 20 : 0.75;
+
+    const need = [];
+    S.comps.forEach(cp => {
+      const nm = String(cp.name || '').trim() || 'Unnamed component';
+      const L = +cp.l, W = +cp.w, H = +cp.h, q = Math.max(1, Math.round(+cp.qty || 1));
+      if(!(L > 0 && W > 0 && H > 0)){ warnings.push('“' + nm + '” needs a length, width and height.'); return; }
+      for(let k = 0; k < q; k++){
+        const tr = {
+          name: q > 1 ? nm + ' (' + (k + 1) + ' of ' + q + ')' : nm,
+          need: {l: Math.max(L, W), w: Math.min(L, W), h: H},
+          ox: L + c + 2*t, oy: W + c + 2*t, oz: H + c + t, spare: false
+        };
+        if(tr.oz > UH + EPS){
+          res.unplaced.push(tr);
+          warnings.push('“' + tr.name + '” needs a tray ' + fmt(tr.oz) + ' ' + U + ' tall, but only ' + fmt(UH) + ' ' + U + ' is available. Stand it on its side, or reduce the space above trays.');
+          continue;
+        }
+        if(!fits(tr.ox, tr.oy, UL, UW)){
+          res.unplaced.push(tr);
+          warnings.push('“' + tr.name + '” needs a tray ' + fmt(tr.ox) + ' × ' + fmt(tr.oy) + ' ' + U + ', which is bigger than the box floor.');
+          continue;
+        }
+        need.push(tr);
+      }
+    });
+
+    let lay = null;
+    if(need.length){
+      const modes = S.stack === 'auto' ? [false, true] : [S.stack === 'on'];
+      for(const m of modes){
+        lay = layout(need, m, UL, UW, UH);
+        res.stackUsed = m;
+        if(!lay.unplacedCols.length) break;
+      }
+      if(lay.unplacedCols.length){
+        const lost = [].concat(...lay.unplacedCols.map(col => col.trays));
+        res.unplaced.push(...lost);
+        warnings.push(lost.length + (lost.length === 1 ? ' tray doesn’t' : ' trays don’t') + ' fit on the floor: ' + lost.map(x => x.name).join(', ') + '. Try stacking, thinner material, less clearance, or less space above the trays.');
+      }
+    }
+
+    const cols = lay ? lay.placed.map(p => ({x: p.x, y: p.y, w: p.w, h: p.h, trays: p.ref.trays.slice(), spare: false})) : [];
+    const gaps = [];
+    if(lay){
+      for(const f of lay.free){
+        if(S.fill && f.w >= 2*t + minCav - EPS && f.h >= 2*t + minCav - EPS){
+          cols.push({x: f.x, y: f.y, w: f.w, h: f.h, spare: true, trays: [{name: 'Spare tray', spare: true, need: null}]});
+        } else gaps.push(Object.assign({}, f));
+      }
+    }
+    if(S.fill){
+      const tol = 1e-6*Math.max(1, UL, UW);
+      const near = (a, b) => Math.abs(a - b) < tol;
+      let changed = true;
+      while(changed){
+        changed = false;
+        for(let i = gaps.length - 1; i >= 0; i--){
+          const g = gaps[i];
+          for(const col of cols){
+            let hit = false;
+            if(near(col.y, g.y) && near(col.h, g.h)){
+              if(near(col.x + col.w, g.x)){ col.w += g.w; hit = true; }
+              else if(near(g.x + g.w, col.x)){ col.x = g.x; col.w += g.w; hit = true; }
+            }
+            if(!hit && near(col.x, g.x) && near(col.w, g.w)){
+              if(near(col.y + col.h, g.y)){ col.h += g.h; hit = true; }
+              else if(near(g.y + g.h, col.y)){ col.y = g.y; col.h += g.h; hit = true; }
+            }
+            if(hit){ gaps.splice(i, 1); changed = true; break; }
+          }
+        }
+      }
+    }
+
+    cols.sort((a, b) => (Math.round(a.y*100) - Math.round(b.y*100)) || (a.x - b.x));
+    let n = 0;
+    for(const col of cols){
+      col.trays.forEach((tr, idx) => {
+        tr.X = col.w; tr.Y = col.h;
+        tr.Z = tr.spare ? UH : tr.oz;
+        tr.level = idx;
+        tr.letter = letter(n++);
+        tr.below = idx > 0 ? col.trays[idx - 1].letter : null;
+      });
+      const sum = col.trays.reduce((s, tr) => s + tr.Z, 0);
+      if(S.level && sum < UH - EPS) col.trays[col.trays.length - 1].Z += UH - sum;
+      col.z = col.trays.reduce((s, tr) => s + tr.Z, 0);
+      for(const tr of col.trays){
+        tr.cav = {l: Math.max(tr.X, tr.Y) - 2*t, w: Math.min(tr.X, tr.Y) - 2*t, d: tr.Z - t};
+        res.trays.push(tr);
+      }
+    }
+    res.cols = cols;
+    res.gaps = gaps;
+
+    // Pieces: base is the full footprint; long walls run full length on the base; short walls fit between them.
+    for(const tr of res.trays){
+      const L = Math.max(tr.X, tr.Y), W = Math.min(tr.X, tr.Y), wh = tr.Z - t;
+      const add = (part, a, b) => res.pieces.push({tray: tr.letter, part, a: Math.max(a, b), b: Math.min(a, b)});
+      add('base', L, W);
+      add('long wall', L, wh); add('long wall', L, wh);
+      add('short wall', W - 2*t, wh); add('short wall', W - 2*t, wh);
+    }
+
+    const gmap = new Map();
+    for(const p of res.pieces){
+      const key = fmt(p.a) + '×' + fmt(p.b);
+      if(!gmap.has(key)) gmap.set(key, {a: p.a, b: p.b, qty: 0, parts: new Map()});
+      const g = gmap.get(key);
+      g.qty++;
+      const pk = p.tray + ' ' + p.part;
+      g.parts.set(pk, (g.parts.get(pk) || 0) + 1);
+    }
+    res.groups = [...gmap.values()].sort((x, y) => (y.a - x.a) || (y.b - x.b)).map(g => ({
+      a: g.a, b: g.b, qty: g.qty,
+      parts: [...g.parts.entries()].map(([k, v]) => v > 1 ? k + ' ×' + v : k)
+    }));
+
+    // Sheet nesting
+    const k = Math.max(0, +S.kerf || 0), SL = +S.sheet.l || 0, SW = +S.sheet.w || 0;
+    if(res.pieces.length){
+      if(!(SL > 0 && SW > 0)){
+        warnings.push('Enter a sheet size to see how many sheets you need.');
+      } else {
+        let items = res.pieces.map(p => ({w: p.a + k, h: p.b + k, ref: p}));
+        const fitsSheet = it => S.rotate ? fits(it.w, it.h, SL + k, SW + k) : (it.w <= SL + k + EPS && it.h <= SW + k + EPS);
+        const big = items.filter(it => !fitsSheet(it));
+        if(big.length){
+          warnings.push(big.length + (big.length === 1 ? ' piece is' : ' pieces are') + ' larger than one sheet (' + big.map(b => b.ref.tray + ' ' + b.ref.part).join(', ') + '). Use a bigger sheet or join two pieces.');
+          items = items.filter(fitsSheet);
+        }
+        items.sort((x, y) => (y.w*y.h - x.w*x.h) || (y.w - x.w));
+        while(items.length && res.sheets.length < 200){
+          const r = guillotine(SL + k, SW + k, items, !!S.rotate);
+          if(!r.placed.length) break;
+          res.sheets.push(r.placed);
+          items = r.unplaced;
+        }
+        const used = res.pieces.reduce((s, p) => s + p.a*p.b, 0);
+        res.sheetUse = res.sheets.length ? used/(res.sheets.length*SL*SW) : 0;
+        res.sheetUseEach = res.sheets.map(sh => sh.reduce((s, p) => s + p.ref.a*p.ref.b, 0)/(SL*SW));
+      }
+    }
+    res.kerf = k; res.SL = SL; res.SW = SW;
+    return res;
+  }
+
+  // ---------- Full-size cutting template (PDF, all geometry in mm) ----------
+  const PAPERS = {letter: [215.9, 279.4], a4: [210, 297], tabloid: [279.4, 431.8], a3: [297, 420]};
+  const SHORT = {'base': 'base', 'long wall': 'long', 'short wall': 'short'};
+
+  function overlapArea(q, reg){
+    const w = Math.min(q.x + q.w, reg.x1) - Math.max(q.x, reg.x0);
+    const h = Math.min(q.y + q.h, reg.y1) - Math.max(q.y, reg.y0);
+    return w > 0 && h > 0 ? w*h : 0;
+  }
+
+  function templatePlan(R, o){
+    const f = o.unit === 'mm' ? 1 : 25.4;
+    const SL = R.SL*f, SW = R.SW*f, k = R.kerf*f, M = 12;
+    if(!R.sheets || !R.sheets.length || !(SL > 0 && SW > 0)) return null;
+    const rectsOf = sh => sh.map(p => ({x: p.x*f, y: p.y*f, w: p.w*f - k, h: p.h*f - k, ref: p.ref}));
+    if(o.paper === 'full'){
+      return {full: true, M, pw: SL + 2*M, ph: SW + 2*M + 14, SL, SW, pages: R.sheets.length,
+        sheets: R.sheets.map(sh => ({rects: rectsOf(sh), tiles: []}))};
+    }
+    const [a, b] = PAPERS[o.paper] || PAPERS.letter;
+    const count = (w, h) => Math.ceil(SL/(w - 2*M) - 1e-9)*Math.ceil(SW/(h - 2*M) - 1e-9);
+    const land = count(b, a) < count(a, b);
+    const pw = land ? b : a, ph = land ? a : b, tw = pw - 2*M, th = ph - 2*M;
+    const cols = Math.ceil(SL/tw - 1e-9), rows = Math.ceil(SW/th - 1e-9);
+    const sheets = R.sheets.map(sh => {
+      const rects = rectsOf(sh);
+      const tiles = [];
+      for(let i = 0; i < rows*cols; i++){
+        const r = Math.floor(i/cols), c = i % cols;
+        const reg = {x0: c*tw, y0: r*th, x1: Math.min((c + 1)*tw, SL), y1: Math.min((r + 1)*th, SW), r, c, name: letter(r) + (c + 1)};
+        reg.used = rects.some(q => overlapArea(q, reg) > 0.01);
+        tiles.push(reg);
+      }
+      return {rects, tiles};
+    });
+    const pages = 1 + sheets.reduce((s, sh) => s + 1 + sh.tiles.filter(t => t.used).length, 0);
+    return {full: false, M, pw, ph, SL, SW, rows, cols, pages, sheets};
+  }
+
+  function clippedRect(doc, q, reg, X, Y){
+    const hz = (yy, xa, xb) => {
+      if(yy < reg.y0 - 1e-6 || yy > reg.y1 + 1e-6) return;
+      const a = Math.max(xa, reg.x0), b = Math.min(xb, reg.x1);
+      if(b - a > 1e-6) doc.line(X(a), Y(yy), X(b), Y(yy));
+    };
+    const vt = (xx, ya, yb) => {
+      if(xx < reg.x0 - 1e-6 || xx > reg.x1 + 1e-6) return;
+      const a = Math.max(ya, reg.y0), b = Math.min(yb, reg.y1);
+      if(b - a > 1e-6) doc.line(X(xx), Y(a), X(xx), Y(b));
+    };
+    hz(q.y, q.x, q.x + q.w); hz(q.y + q.h, q.x, q.x + q.w);
+    vt(q.x, q.y, q.y + q.h); vt(q.x + q.w, q.y, q.y + q.h);
+  }
+
+  function fitPt(doc, lines, w, h, maxPt, minPt){
+    for(let pt = maxPt; pt >= minPt; pt -= 0.5){
+      doc.setFontSize(pt);
+      const lh = pt*0.3528*1.2;
+      const tw = Math.max(...lines.map(l => doc.getTextWidth(l)));
+      if(tw <= w*0.88 && lh*lines.length <= h*0.88) return pt;
+    }
+    return 0;
+  }
+
+  function placeLabel(doc, variants, cx, cy, w, h, maxPt, minPt){
+    const tries = [];
+    variants.forEach(lines => { tries.push({lines, rot: false}); tries.push({lines, rot: true}); });
+    for(const t of tries){
+      const pt = fitPt(doc, t.lines, t.rot ? h : w, t.rot ? w : h, maxPt, minPt);
+      if(!pt) continue;
+      const lh = pt*0.3528*1.2, bh = lh*t.lines.length;
+      t.lines.forEach((l, i) => {
+        const off = -bh/2 + (i + 0.78)*lh;
+        if(t.rot) doc.text(l, cx + off, cy + doc.getTextWidth(l)/2, {angle: 90});
+        else doc.text(l, cx, cy + off, {align: 'center'});
+      });
+      return;
+    }
+  }
+
+  function drawRegion(ctx, plan, sh, reg, ox, oy, s, o){
+    const doc = ctx.doc;
+    const X = v => ox + (v - reg.x0)*s, Y = v => oy + (v - reg.y0)*s;
+    doc.setDrawColor(0);
+    doc.setLineWidth(o.edgeW);
+    clippedRect(doc, {x: 0, y: 0, w: plan.SL, h: plan.SW}, reg, X, Y);
+    doc.setLineWidth(o.cutW);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(25);
+    for(const q of sh.rects){
+      clippedRect(doc, q, reg, X, Y);
+      const ix0 = Math.max(q.x, reg.x0), iy0 = Math.max(q.y, reg.y0);
+      const ix1 = Math.min(q.x + q.w, reg.x1), iy1 = Math.min(q.y + q.h, reg.y1);
+      if(ix1 - ix0 <= 0.5 || iy1 - iy0 <= 0.5) continue;
+      const head = q.ref.tray + ' ' + q.ref.part;
+      const size = ctx.fmt(q.ref.a) + ' × ' + ctx.fmt(q.ref.b) + ' ' + ctx.unit;
+      const nm = ctx.names[q.ref.tray] || '';
+      const variants = o.brief
+        ? [[q.ref.tray + ' ' + SHORT[q.ref.part]], [q.ref.tray]]
+        : [[head, size, nm], [head, size], [head], [q.ref.tray]];
+      placeLabel(doc, variants.filter(v => v.every(Boolean)), X((ix0 + ix1)/2), Y((iy0 + iy1)/2), (ix1 - ix0)*s, (iy1 - iy0)*s, o.maxPt, o.minPt);
+    }
+  }
+
+  function scaleBar(doc, x, y, len, tick, label){
+    doc.setDrawColor(0); doc.setLineWidth(0.4);
+    doc.line(x, y, x + len, y);
+    for(let t = 0; t <= len + 1e-6; t += tick) doc.line(x + t, y - 2.5, x + t, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20);
+    doc.text(label, x + len + 3, y);
+  }
+
+  function drawCover(ctx, plan, o){
+    const doc = ctx.doc, R = ctx.R, M = 16;
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    let y = M + 4;
+    const para = (text, size, style, gap) => {
+      doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); doc.setTextColor(20);
+      const lines = doc.splitTextToSize(text, W - 2*M);
+      if(y + lines.length*size*0.42 > H - M){ doc.addPage(); y = M + 4; }
+      doc.text(lines, M, y);
+      y += lines.length*size*0.42 + (gap || 0);
+    };
+    para('Game insert cutting template', 20, 'bold', 4);
+    para('Material: ' + o.materialLabel, 10.5, 'normal', 1);
+    para(R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + ctx.fmt(R.SL) + ' × ' + ctx.fmt(R.SW) + ' ' + ctx.unit + ', ' + R.pieces.length + ' pieces, ' + ctx.fmt(R.kerf) + ' ' + ctx.unit + ' left between pieces for the blade.', 10.5, 'normal', 1);
+    para('Printed on ' + o.paperLabel + ' paper, ' + plan.rows + ' rows × ' + plan.cols + ' columns of pages per sheet. Pages with no pieces are left out.', 10.5, 'normal', 6);
+    para('Check the scale first', 12, 'bold', 1);
+    para('Print at 100% ("Actual size") with "Fit to page" turned off. Each bar below must measure exactly what it says. If it does not, fix the print settings before you print the rest.', 10, 'normal', 8);
+    scaleBar(doc, M, y, 100, 10, '100 mm'); y += 11;
+    scaleBar(doc, M, y, 101.6, 25.4, '4 in'); y += 12;
+    para('How to use it', 12, 'bold', 1);
+    [
+      'Print every page. Pages are named by row and column (A1, A2, B1...). The overview page for each sheet shows where its pages go.',
+      'Trim each page along its dashed frame wherever that edge meets another page. The notes in the margin say which page joins on each side.',
+      'Butt the pages together edge to edge and tape them on the back.',
+      'Line the thick sheet edge up with the edge of your board and stick the template down with spray adhesive or a glue stick. Repositionable spray mount peels off cleanly afterwards.',
+      'Cut on the waste side of each solid line so every piece keeps its full size. Each piece is labeled with its tray letter and part.',
+      'Build each tray: glue the long walls onto the base, then the short walls between them.'
+    ].forEach((s, i) => para((i + 1) + '.  ' + s, 10, 'normal', 1.5));
+    y += 4;
+    para('Tray key', 12, 'bold', 1);
+    R.trays.forEach(t => para(t.letter + '   ' + (t.spare ? 'Spare tray' : t.name) + '   (outside ' + ctx.fmt(Math.max(t.X, t.Y)) + ' × ' + ctx.fmt(Math.min(t.X, t.Y)) + ' × ' + ctx.fmt(t.Z) + ' ' + ctx.unit + ')', 9.5, 'normal', 0.6));
+  }
+
+  function drawOverview(ctx, plan, sh, si){
+    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(20);
+    doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ': overview', M, M);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    const used = sh.tiles.filter(t => t.used);
+    const msg = 'Pages ' + used.map(t => t.name).join(', ') + ' (' + used.length + (used.length === 1 ? ' page' : ' pages') + '). Rows run top to bottom, columns left to right.' + (used.length < sh.tiles.length ? ' Gray areas have no pieces, so those pages are left out.' : '');
+    const wrapped = doc.splitTextToSize(msg, pw - 2*M);
+    doc.text(wrapped, M, M + 6);
+    const top = M + 6 + wrapped.length*4.2 + 4;
+    const s = Math.min((pw - 2*M)/plan.SL, (ph - top - M)/plan.SW);
+    doc.setFillColor(225);
+    sh.tiles.filter(t => !t.used).forEach(t => doc.rect(M + t.x0*s, top + t.y0*s, (t.x1 - t.x0)*s, (t.y1 - t.y0)*s, 'F'));
+    drawRegion(ctx, plan, sh, {x0: 0, y0: 0, x1: plan.SL, y1: plan.SW}, M, top, s, {edgeW: 0.5, cutW: 0.2, maxPt: 8, minPt: 4, brief: true});
+    doc.setDrawColor(120); doc.setLineWidth(0.25); doc.setLineDashPattern([1.5, 1.2], 0);
+    sh.tiles.forEach(t => doc.rect(M + t.x0*s, top + t.y0*s, (t.x1 - t.x0)*s, (t.y1 - t.y0)*s));
+    doc.setLineDashPattern([], 0);
+    doc.setFontSize(8); doc.setTextColor(110);
+    sh.tiles.forEach(t => doc.text(t.name, M + t.x0*s + 1.5, top + t.y0*s + 3.5));
+  }
+
+  function drawTile(ctx, plan, sh, si, t, unit){
+    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph;
+    const fw = t.x1 - t.x0, fh = t.y1 - t.y0;
+    doc.setDrawColor(140); doc.setLineWidth(0.2); doc.setLineDashPattern([2, 1.5], 0);
+    doc.rect(M, M, fw, fh);
+    doc.setLineDashPattern([], 0);
+    doc.setDrawColor(0);
+    [[M, M, -1, -1], [M + fw, M, 1, -1], [M, M + fh, -1, 1], [M + fw, M + fh, 1, 1]].forEach(([x, y, dx, dy]) => {
+      doc.line(x, y, x + dx*4, y); doc.line(x, y, x, y + dy*4);
+    });
+    drawRegion(ctx, plan, sh, t, M, M, 1, {edgeW: 0.8, cutW: 0.35, maxPt: 13, minPt: 5});
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20);
+    doc.text('Page ' + t.name, M, 6);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90);
+    doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ' · row ' + letter(t.r) + ', column ' + (t.c + 1), pw - M, 6, {align: 'right'});
+    const nb = (r, c) => sh.tiles.find(x => x.r === r && x.c === c && x.used);
+    const up = nb(t.r - 1, t.c), dn = nb(t.r + 1, t.c), lf = nb(t.r, t.c - 1), rt = nb(t.r, t.c + 1);
+    if(up) doc.text('top edge joins ' + up.name, M + fw/2, M - 2.5, {align: 'center'});
+    if(dn) doc.text('bottom edge joins ' + dn.name, M + fw/2, M + fh + 4.5, {align: 'center'});
+    if(lf){ const s = 'left edge joins ' + lf.name; doc.text(s, M - 2.5, M + fh/2 + doc.getTextWidth(s)/2, {angle: 90}); }
+    if(rt){ const s = 'right edge joins ' + rt.name; doc.text(s, M + fw + 4.5, M + fh/2 + doc.getTextWidth(s)/2, {angle: 90}); }
+    if(unit === 'mm') scaleBar(doc, M, ph - 4, 50, 10, '50 mm');
+    else scaleBar(doc, M, ph - 4, 50.8, 25.4, '2 in');
+    doc.setFontSize(7.5); doc.setTextColor(90);
+    doc.text('Print at 100%. Cut on the waste side of each line.', pw - M, ph - 4, {align: 'right'});
+  }
+
+  function buildFull(jsPDF, ctx, plan, o){
+    const M = plan.M, pw = plan.pw, ph = plan.ph, orient = pw > ph ? 'landscape' : 'portrait';
+    const doc = new jsPDF({unit: 'mm', format: [pw, ph], orientation: orient});
+    ctx.doc = doc;
+    plan.sheets.forEach((sh, si) => {
+      if(si) doc.addPage([pw, ph], orient);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
+      doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ' · ' + ctx.fmt(ctx.R.SL) + ' × ' + ctx.fmt(ctx.R.SW) + ' ' + ctx.unit + ' · ' + o.materialLabel, M, M - 4);
+      drawRegion(ctx, plan, sh, {x0: 0, y0: 0, x1: plan.SL, y1: plan.SW}, M, M, 1, {edgeW: 0.8, cutW: 0.35, maxPt: 14, minPt: 5});
+      const fy = M + plan.SW + 9;
+      scaleBar(doc, M, fy, 100, 10, '100 mm');
+      scaleBar(doc, M + 125, fy, 101.6, 25.4, '4 in');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(70);
+      doc.text(doc.splitTextToSize('Print at 100% (actual size) and check both bars with a ruler. Line the thick edge up with your board and cut on the waste side of each line.', plan.SL), M, fy + 6);
+    });
+    return doc;
+  }
+
+  // Returns a jsPDF document: 1:1 scale, tiled onto printer paper or one page per sheet.
+  function buildTemplate(jsPDF, R, o){
+    const plan = templatePlan(R, o);
+    if(!plan) throw new Error('There is nothing to put on a template yet.');
+    const names = {};
+    R.trays.forEach(t => { names[t.letter] = t.spare ? 'Spare tray' : t.name; });
+    const ctx = {doc: null, R, fmt: makeFmt(o.unit), names, unit: o.unit};
+    if(plan.full) return buildFull(jsPDF, ctx, plan, o);
+    const orient = plan.pw > plan.ph ? 'landscape' : 'portrait';
+    const doc = new jsPDF({unit: 'mm', format: PAPERS[o.paper] || PAPERS.letter, orientation: 'portrait'});
+    ctx.doc = doc;
+    drawCover(ctx, plan, o);
+    plan.sheets.forEach((sh, si) => {
+      doc.addPage([plan.pw, plan.ph], orient);
+      drawOverview(ctx, plan, sh, si);
+      sh.tiles.filter(t => t.used).forEach(t => {
+        doc.addPage([plan.pw, plan.ph], orient);
+        drawTile(ctx, plan, sh, si, t, o.unit);
+      });
+    });
+    return doc;
+  }
+
+  return {compute, makeFmt, guillotine, templatePlan, buildTemplate};
+})();
+</script>
+
+<script>
+(function(){
+  const STORE = 'game-insert-planner-v1';
+  const MATERIALS = [
+    {id:'foam5', label:'5 mm foam board', mm:5, kind:'foam'},
+    {id:'foam316', label:'3/16 in foam board', mm:4.7625, kind:'foam'},
+    {id:'foam3', label:'3 mm foam board', mm:3, kind:'foam'},
+    {id:'ply18', label:'1/8 in plywood', mm:3.175, kind:'ply'},
+    {id:'ply3', label:'3 mm plywood or basswood', mm:3, kind:'ply'},
+    {id:'ply14', label:'1/4 in plywood', mm:6.35, kind:'ply'},
+    {id:'mdf3', label:'3 mm MDF', mm:3, kind:'mdf'},
+    {id:'custom', label:'Other (enter thickness)', mm:null, kind:null}
+  ];
+  const SHEETS = [
+    {id:'foam2030', label:'Foam board, 20 × 30 in', l:762, w:508},
+    {id:'foam3240', label:'Foam board, 32 × 40 in', l:1016, w:812.8},
+    {id:'a2', label:'Foam board, A2 (594 × 420 mm)', l:594, w:420},
+    {id:'ply1224', label:'Plywood, 12 × 24 in', l:609.6, w:304.8},
+    {id:'ply2424', label:'Plywood, 24 × 24 in', l:609.6, w:609.6},
+    {id:'ply2x4', label:'Plywood, 2 × 4 ft', l:1219.2, w:609.6},
+    {id:'custom', label:'Other (enter size)'}
+  ];
+
+  function example(){
+    return {
+      unit:'mm', box:{l:290, w:290, h:70}, topReserve:10,
+      materialId:'foam5', kind:'foam', t:5, clearance:1, kerf:0.5,
+      sheetId:'foam2030', sheet:{l:762, w:508},
+      stack:'auto', level:true, fill:true, rotate:true,
+      comps:[
+        {name:'Main deck (sleeved)', l:92, w:67, h:42, qty:1},
+        {name:'Event cards', l:70, w:45, h:22, qty:1},
+        {name:'Player pieces', l:75, w:55, h:18, qty:4},
+        {name:'Resource tokens', l:120, w:80, h:20, qty:1},
+        {name:'Dice and markers', l:60, w:60, h:25, qty:1},
+        {name:'Terrain tiles', l:140, w:100, h:12, qty:1}
+      ]
+    };
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE);
+      if(!raw) return null;
+      const s = JSON.parse(raw);
+      if(!s || !Array.isArray(s.comps) || !s.box || !s.sheet) return null;
+      return Object.assign(example(), s);
+    }catch(e){ return null; }
+  }
+  function save(){ try{ localStorage.setItem(STORE, JSON.stringify(S)); }catch(e){} }
+
+  let S = load() || example();
+  const $ = (q, el) => (el || document).querySelector(q);
+  const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const isMM = () => S.unit === 'mm';
+  const fromMM = v => isMM() ? v : v/25.4;
+  const roundU = v => isMM() ? Math.round(v*100)/100 : Math.round(v*10000)/10000;
+  let fmt = InsertPlanner.makeFmt(S.unit);
+  const dims = (a, b) => fmt(a) + ' × ' + fmt(b);
+
+  function getPath(p){ return p.split('.').reduce((o, k) => o[k], S); }
+  function setPath(p, v){ const ks = p.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], S)[last] = v; }
+
+  // ---------- inputs ----------
+  $('#material').innerHTML = MATERIALS.map(m => '<option value="' + m.id + '">' + esc(m.label) + '</option>').join('');
+  $('#sheet-preset').innerHTML = SHEETS.map(m => '<option value="' + m.id + '">' + esc(m.label) + '</option>').join('');
+
+  function syncInputs(){
+    document.querySelectorAll('[data-path]').forEach(el => { const v = getPath(el.dataset.path); el.value = (v === '' || v == null) ? '' : roundU(v); });
+    document.querySelectorAll('.u').forEach(el => el.textContent = '(' + S.unit + ')');
+    $('#unit-mm').setAttribute('aria-pressed', String(isMM()));
+    $('#unit-in').setAttribute('aria-pressed', String(!isMM()));
+    $('#material').value = S.materialId;
+    $('#sheet-preset').value = S.sheetId;
+    $('#stack-mode').value = S.stack;
+    $('#level').checked = !!S.level;
+    $('#fill').checked = !!S.fill;
+    $('#rotate').checked = !!S.rotate;
+    renderComps();
+  }
+
+  function renderComps(){
+    const labels = {l:'Length', w:'Width', h:'Height', qty:'Qty'};
+    $('#comps').innerHTML = S.comps.length ? S.comps.map((c, i) =>
+      '<div class="comp" data-i="' + i + '">' +
+        '<div class="name-row"><input type="text" id="comp-' + i + '-name" data-k="name" value="' + esc(c.name || '') + '" aria-label="Component ' + (i + 1) + ' name" placeholder="e.g. Main deck">' +
+        '<button type="button" class="icon-btn" data-act="del" aria-label="Remove ' + esc(c.name || 'component ' + (i + 1)) + '" title="Remove">×</button></div>' +
+        ['l','w','h','qty'].map(k =>
+          '<div class="field"><label for="comp-' + i + '-' + k + '">' + labels[k] + '</label>' +
+          '<input type="number" id="comp-' + i + '-' + k + '" data-k="' + k + '" min="0" step="' + (k === 'qty' ? '1' : 'any') + '" inputmode="' + (k === 'qty' ? 'numeric' : 'decimal') + '" value="' + (c[k] == null || c[k] === '' ? '' : (k === 'qty' ? c[k] : roundU(c[k]))) + '"></div>'
+        ).join('') +
+      '</div>'
+    ).join('') : '<p class="muted small" style="margin:0">No components yet. Add the first one below.</p>';
+    const total = S.comps.reduce((s, c) => s + Math.max(1, Math.round(+c.qty || 1)), 0);
+    $('#comp-count').textContent = S.comps.length ? total + (total === 1 ? ' tray' : ' trays') : '';
+  }
+
+  document.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', () => {
+    const v = el.value === '' ? '' : parseFloat(el.value);
+    setPath(el.dataset.path, isNaN(v) ? '' : v);
+    if(el.dataset.path === 't'){
+      const m = MATERIALS.find(m => m.mm && Math.abs(fromMM(m.mm) - v) < (isMM() ? 0.01 : 0.0005) && m.kind === S.kind);
+      S.materialId = m ? m.id : 'custom';
+      $('#material').value = S.materialId;
+    }
+    if(el.dataset.path.startsWith('sheet.')){ S.sheetId = 'custom'; $('#sheet-preset').value = 'custom'; }
+    update();
+  }));
+
+  $('#material').addEventListener('change', e => {
+    const m = MATERIALS.find(m => m.id === e.target.value);
+    S.materialId = m.id;
+    if(m.kind) S.kind = m.kind;
+    if(m.mm){ S.t = roundU(fromMM(m.mm)); $('#thickness').value = S.t; }
+    if(m.kind === 'foam' && S.kerf > fromMM(1)) { S.kerf = roundU(fromMM(0.5)); $('#kerf').value = S.kerf; }
+    if((m.kind === 'ply' || m.kind === 'mdf') && S.kerf < fromMM(1)) { S.kerf = roundU(fromMM(1.5)); $('#kerf').value = S.kerf; }
+    update();
+  });
+  $('#sheet-preset').addEventListener('change', e => {
+    const p = SHEETS.find(x => x.id === e.target.value);
+    S.sheetId = p.id;
+    if(p.l){ S.sheet = {l: roundU(fromMM(p.l)), w: roundU(fromMM(p.w))}; $('#sheet-l').value = S.sheet.l; $('#sheet-w').value = S.sheet.w; }
+    update();
+  });
+  $('#stack-mode').addEventListener('change', e => { S.stack = e.target.value; update(); });
+  ['level','fill','rotate'].forEach(id => $('#' + id).addEventListener('change', e => { S[id] = e.target.checked; update(); }));
+
+  document.querySelectorAll('[data-unit]').forEach(b => b.addEventListener('click', () => {
+    const u = b.dataset.unit;
+    if(u === S.unit) return;
+    const f = u === 'in' ? 1/25.4 : 25.4;
+    const cv = v => (v === '' || v == null || isNaN(+v)) ? v : (u === 'mm' ? Math.round(v*f*100)/100 : Math.round(v*f*10000)/10000);
+    S.box = {l: cv(S.box.l), w: cv(S.box.w), h: cv(S.box.h)};
+    S.topReserve = cv(S.topReserve); S.t = cv(S.t); S.clearance = cv(S.clearance); S.kerf = cv(S.kerf);
+    S.sheet = {l: cv(S.sheet.l), w: cv(S.sheet.w)};
+    S.comps = S.comps.map(c => Object.assign({}, c, {l: cv(c.l), w: cv(c.w), h: cv(c.h)}));
+    S.unit = u;
+    fmt = InsertPlanner.makeFmt(u);
+    syncInputs();
+    update();
+  }));
+
+  $('#comps').addEventListener('input', e => {
+    const row = e.target.closest('.comp'); if(!row) return;
+    const i = +row.dataset.i, k = e.target.dataset.k;
+    if(k === 'name') S.comps[i].name = e.target.value;
+    else { const v = parseFloat(e.target.value); S.comps[i][k] = isNaN(v) ? '' : v; }
+    if(k === 'qty'){
+      const total = S.comps.reduce((s, c) => s + Math.max(1, Math.round(+c.qty || 1)), 0);
+      $('#comp-count').textContent = total + (total === 1 ? ' tray' : ' trays');
+    }
+    update();
+  });
+  $('#comps').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act="del"]'); if(!btn) return;
+    const i = +btn.closest('.comp').dataset.i;
+    S.comps.splice(i, 1);
+    renderComps(); update();
+  });
+  $('#add-comp').addEventListener('click', () => {
+    S.comps.push({name:'', l:'', w:'', h:'', qty:1});
+    renderComps();
+    const el = document.getElementById('comp-' + (S.comps.length - 1) + '-name');
+    if(el) el.focus();
+    update();
+  });
+  $('#clear-comps').addEventListener('click', () => {
+    S.comps = [{name:'', l:'', w:'', h:'', qty:1}];
+    renderComps();
+    const el = document.getElementById('comp-0-name'); if(el) el.focus();
+    update();
+  });
+  $('#load-example').addEventListener('click', () => { S = example(); fmt = InsertPlanner.makeFmt(S.unit); syncInputs(); update(); });
+
+  // ---------- drawing helpers ----------
+  function gridLines(x0, y0, x1, y1){
+    const minor = isMM() ? 10 : 0.5, every = isMM() ? 5 : 2;
+    let out = '';
+    const sx = Math.ceil(x0/minor), ex = Math.floor(x1/minor);
+    for(let i = sx; i <= ex; i++){ const x = i*minor; out += '<line class="' + (i % every === 0 ? 'gmaj' : 'gmin') + '" x1="' + x + '" y1="' + y0 + '" x2="' + x + '" y2="' + y1 + '"/>'; }
+    const sy = Math.ceil(y0/minor), ey = Math.floor(y1/minor);
+    for(let i = sy; i <= ey; i++){ const y = i*minor; out += '<line class="' + (i % every === 0 ? 'gmaj' : 'gmin') + '" x1="' + x0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '"/>'; }
+    return out;
+  }
+  function hatchDef(id, size){
+    return '<defs><pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + size + '" height="' + size + '" patternTransform="rotate(45)"><line class="hl" x1="0" y1="0" x2="0" y2="' + size + '"/></pattern></defs>';
+  }
+  function fitText(str, availW, maxF, minF){
+    const cw = 0.62;
+    let f = Math.min(maxF, availW/(Math.max(1, str.length)*cw));
+    if(f >= minF) return {s: str, f};
+    const n = Math.floor(availW/(minF*cw));
+    if(n < 3) return null;
+    return {s: str.slice(0, n - 1) + '…', f: minF};
+  }
+
+  function planSVG(R){
+    const bl = +S.box.l, bw = +S.box.w, o = R.offset, t = R.t;
+    const M = Math.max(bl, bw), pad = M*0.075, fs = M/30;
+    let s = '<svg viewBox="' + (-pad) + ' ' + (-pad) + ' ' + (bl + 2*pad) + ' ' + (bw + 2*pad) + '" class="k-' + S.kind + '" role="img" aria-label="Top view of the tray layout inside the box">';
+    s += hatchDef('hatch-plan', M/70);
+    s += '<rect class="mat" x="' + (-pad) + '" y="' + (-pad) + '" width="' + (bl + 2*pad) + '" height="' + (bw + 2*pad) + '"/>';
+    s += gridLines(-pad, -pad, bl + pad, bw + pad);
+    for(const g of R.gaps){
+      s += '<rect class="gap" fill="url(#hatch-plan)" x="' + (o + g.x) + '" y="' + (o + g.y) + '" width="' + g.w + '" height="' + g.h + '"/>';
+    }
+    for(const col of R.cols){
+      const x = o + col.x, y = o + col.y, w = col.w, h = col.h;
+      const top = col.trays[col.trays.length - 1];
+      s += '<rect class="wall" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/>';
+      s += '<rect class="cav" x="' + (x + t) + '" y="' + (y + t) + '" width="' + Math.max(0, w - 2*t) + '" height="' + Math.max(0, h - 2*t) + '"/>';
+      const iw = w - 2*t, ih = h - 2*t;
+      const lf = Math.max(fs*0.5, Math.min(fs*1.7, Math.min(iw, ih)*0.4));
+      const nm = fitText(top.spare ? 'spare' : top.name, iw*0.9, fs*0.62, fs*0.4);
+      const below = col.trays.length > 1 ? col.trays.slice(0, -1).reverse().map(x => x.letter).join(', ') : '';
+      const sub = below ? fitText('over ' + below, iw*0.9, fs*0.55, fs*0.38) : null;
+      const total = lf + (nm ? nm.f*1.35 : 0) + (sub ? sub.f*1.3 : 0);
+      if(total > ih*1.02){
+        s += '<text class="t-letter" x="' + (x + w/2) + '" y="' + (y + h/2 + lf*0.36) + '" font-size="' + lf + '" text-anchor="middle">' + top.letter + '</text>';
+        continue;
+      }
+      let cy = y + h/2 - total/2 + lf*0.8;
+      s += '<text class="t-letter" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + lf + '" text-anchor="middle">' + top.letter + '</text>';
+      if(nm){ cy += nm.f*1.35 + lf*0.08; s += '<text class="t-name" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + nm.f + '" text-anchor="middle">' + esc(nm.s) + '</text>'; }
+      if(sub){ cy += sub.f*1.3; s += '<text class="t-name" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + sub.f + '" text-anchor="middle" opacity=".75">' + esc(sub.s) + '</text>'; }
+    }
+    s += '<rect class="boxwall" x="0" y="0" width="' + bl + '" height="' + bw + '"/>';
+    const lfs = fs*0.75;
+    s += '<text class="t-mat" x="' + (bl/2) + '" y="' + (-pad*0.32) + '" font-size="' + lfs + '" text-anchor="middle">' + fmt(bl) + ' ' + S.unit + '</text>';
+    s += '<text class="t-mat" x="' + (-pad*0.32) + '" y="' + (bw/2) + '" font-size="' + lfs + '" text-anchor="middle" transform="rotate(-90 ' + (-pad*0.32) + ' ' + (bw/2) + ')">' + fmt(bw) + ' ' + S.unit + '</text>';
+    s += '</svg>';
+    return s;
+  }
+
+  function sheetSVG(R, sheet, idx){
+    const SL = R.SL, SW = R.SW, k = R.kerf;
+    const M = Math.max(SL, SW), pad = M*0.03, fs = M/38;
+    const id = 'hatch-s' + idx;
+    let s = '<svg viewBox="' + (-pad) + ' ' + (-pad) + ' ' + (SL + 2*pad) + ' ' + (SW + 2*pad) + '" class="k-' + S.kind + '" role="img" aria-label="Sheet ' + (idx + 1) + ' cutting layout">';
+    s += hatchDef(id, M/90);
+    s += '<rect class="mat" x="' + (-pad) + '" y="' + (-pad) + '" width="' + (SL + 2*pad) + '" height="' + (SW + 2*pad) + '"/>';
+    s += gridLines(-pad, -pad, SL + pad, SW + pad);
+    s += '<rect class="sheet" fill="url(#' + id + ')" x="0" y="0" width="' + SL + '" height="' + SW + '"/>';
+    for(const p of sheet){
+      const w = p.w - k, h = p.h - k;
+      s += '<rect class="piece" x="' + p.x + '" y="' + p.y + '" width="' + w + '" height="' + h + '"><title>' + esc(p.ref.tray + ' ' + p.ref.part + ': ' + dims(p.ref.a, p.ref.b)) + '</title></rect>';
+      const short = {base:'base', 'long wall':'long', 'short wall':'short'}[p.ref.part];
+      const horizontal = w >= h;
+      const avail = (horizontal ? w : h)*0.9, thick = horizontal ? h : w;
+      const lbl = fitText(p.ref.tray + ' ' + short, avail, Math.min(fs, thick*0.55), Math.min(fs*0.45, thick*0.5));
+      if(!lbl) continue;
+      const cx = p.x + w/2, cy = p.y + h/2;
+      const dl = thick > lbl.f*2.6 ? fitText(dims(p.ref.a, p.ref.b), avail, lbl.f*0.72, lbl.f*0.5) : null;
+      const rot = horizontal ? '' : ' transform="rotate(-90 ' + cx + ' ' + cy + ')"';
+      const off = dl ? -dl.f*0.55 : 0;
+      s += '<text class="t-name" x="' + cx + '" y="' + (cy + lbl.f*0.35 + off) + '" font-size="' + lbl.f + '" text-anchor="middle" font-weight="600"' + rot + '>' + esc(lbl.s) + '</text>';
+      if(dl) s += '<text class="t-name" x="' + cx + '" y="' + (cy + lbl.f*0.35 + off + dl.f*1.35) + '" font-size="' + dl.f + '" text-anchor="middle" opacity=".7"' + rot + '>' + esc(dl.s) + '</text>';
+    }
+    s += '</svg>';
+    return s;
+  }
+
+  // ---------- results ----------
+  let lastR = null;
+  function update(){
+    save();
+    const R = InsertPlanner.compute(S);
+    lastR = R;
+    const u = S.unit;
+    const real = R.trays.filter(t => !t.spare);
+    const spares = R.trays.filter(t => t.spare);
+    const stacked = R.trays.filter(t => t.level > 0);
+    const placedOK = !R.unplaced.length;
+
+    // status
+    let st = '';
+    if(!S.comps.length || (!R.trays.length && !R.warnings.length)){
+      st = '<div class="status warn">Add at least one component to plan the insert.</div>';
+    } else if(R.warnings.length){
+      st = '<div class="status warn"><strong>' + (placedOK ? 'Check these before cutting' : 'Not everything fits yet') + '</strong><ul>' + R.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>';
+    } else {
+      st = '<div class="status ok">Everything fits. ' + real.length + (real.length === 1 ? ' tray' : ' trays') +
+        (stacked.length ? ', with ' + stacked.length + ' stacked on top of others' : '') +
+        (spares.length ? ', plus ' + spares.length + ' spare' + (spares.length === 1 ? ' tray' : ' trays') + ' filling the gaps' : '') + '.</div>';
+    }
+    $('#status').innerHTML = st;
+
+    // summary
+    const usePct = R.sheets.length ? Math.round(R.sheetUse*100) + '%' : '–';
+    const statHTML = [
+      ['Trays', R.trays.length, real.length + ' for components' + (spares.length ? ', ' + spares.length + ' spare' : '')],
+      ['Pieces to cut', R.pieces.length, R.groups.length + ' different sizes'],
+      ['Sheets', R.sheets.length || '–', R.SL ? dims(R.SL, R.SW) + ' ' + u : ''],
+      ['Sheet used', usePct, 'the rest is offcuts'],
+      ['Tray depth', R.UH > 0 ? fmt(R.UH) : '–', u + ' from box floor to the top of the trays']
+    ].map(([k, v, d]) => '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + esc(d) + '</div></div>').join('');
+    $('#summary').innerHTML = statHTML;
+
+    // plan
+    if(S.box.l > 0 && S.box.w > 0 && R.t > 0){
+      $('#plan').innerHTML = planSVG(R);
+      $('#plan-legend').innerHTML =
+        '<span><span class="sw k-' + S.kind + '"></span>Walls, ' + fmt(R.t) + ' ' + u + ' thick</span>' +
+        '<span><span class="sw cavsw k-' + S.kind + '"></span>Inside of tray</span>' +
+        (R.gaps.length ? '<span><span class="sw gapsw"></span>Gap left open (' + R.gaps.length + ')</span>' : '') +
+        (stacked.length ? '<span>“over B” means this tray sits on top of tray B</span>' : '');
+    } else {
+      $('#plan').innerHTML = '<p class="empty" style="color:var(--mat-ink)">Enter the box size to see the layout.</p>';
+      $('#plan-legend').innerHTML = '';
+    }
+
+    // tray table
+    if(R.trays.length){
+      $('#tray-table').innerHTML = '<thead><tr><th>Tray</th><th>Holds</th><th>Inside (' + u + ')</th><th>Outside (' + u + ')</th><th>Sits on</th></tr></thead><tbody>' +
+        R.trays.slice().sort((a, b) => a.letter.length - b.letter.length || a.letter.localeCompare(b.letter)).map(tr => {
+          const roomy = tr.need && ((tr.cav.l - tr.need.l) > (+S.clearance || 0) + (isMM() ? 5 : 0.2) || (tr.cav.w - tr.need.w) > (+S.clearance || 0) + (isMM() ? 5 : 0.2));
+          const holds = tr.spare ? '<span class="muted">Empty, fills a gap</span>' :
+            esc(tr.name) + '<div class="muted small num">' + fmt(tr.need.l) + ' × ' + fmt(tr.need.w) + ' × ' + fmt(tr.need.h) + '</div>';
+          return '<tr><td><span class="tag' + (tr.spare ? ' spare' : '') + '">' + tr.letter + '</span></td>' +
+            '<td>' + holds + '</td>' +
+            '<td class="num">' + fmt(tr.cav.l) + ' × ' + fmt(tr.cav.w) + ' × ' + fmt(tr.cav.d) + (roomy ? '<span class="chip">extra room</span>' : '') + '</td>' +
+            '<td class="num">' + fmt(Math.max(tr.X, tr.Y)) + ' × ' + fmt(Math.min(tr.X, tr.Y)) + ' × ' + fmt(tr.Z) + '</td>' +
+            '<td>' + (tr.below ? 'Tray ' + tr.below : 'Box floor') + '</td></tr>';
+        }).join('') + '</tbody>';
+    } else {
+      $('#tray-table').innerHTML = '<tbody><tr><td class="empty">No trays yet.</td></tr></tbody>';
+    }
+
+    // cut list
+    const matLabel = (MATERIALS.find(m => m.id === S.materialId) || {}).label;
+    $('#cut-sub').textContent = R.groups.length ? R.pieces.length + ' pieces from ' + (S.materialId === 'custom' ? fmt(R.t) + ' ' + u + ' material' : matLabel) + '. Sizes are finished sizes; the sheet layout already allows for kerf.' : '';
+    if(R.groups.length){
+      $('#cut-table').innerHTML = '<thead><tr><th>Qty</th><th>Length × width (' + u + ')</th><th>Used for</th></tr></thead><tbody>' +
+        R.groups.map(g => '<tr><td class="qty">' + g.qty + '</td><td class="num">' + dims(g.a, g.b) + '</td><td>' + esc(g.parts.join(', ')) + '</td></tr>').join('') + '</tbody>';
+    } else {
+      $('#cut-table').innerHTML = '<tbody><tr><td class="empty">Nothing to cut yet.</td></tr></tbody>';
+    }
+    $('#copy-fallback').hidden = true;
+
+    // sheets
+    if(R.sheets.length){
+      $('#sheet-sub').textContent = R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + dims(R.SL, R.SW) + ' ' + u + ', with ' + fmt(R.kerf) + ' ' + u + ' left between pieces for the blade. Hatched areas are offcuts.';
+      $('#sheets').innerHTML = R.sheets.map((sh, i) =>
+        '<figure style="margin:0"><div class="figure">' + sheetSVG(R, sh, i) + '</div>' +
+        '<figcaption class="sheet-cap"><span>Sheet ' + (i + 1) + ' of ' + R.sheets.length + '</span><span class="muted">' + sh.length + ' pieces · ' + Math.round(R.sheetUseEach[i]*100) + '% used</span></figcaption></figure>'
+      ).join('');
+    } else {
+      $('#sheet-sub').textContent = '';
+      $('#sheets').innerHTML = '<p class="empty">Sheet layouts appear once there is something to cut.</p>';
+    }
+
+    // assembly
+    const kindTip = {
+      foam: 'Cut foam board with a fresh blade against a metal ruler, in two or three light passes. Change blades often; a dull blade tears the foam.',
+      ply: 'Sand the edges lightly before gluing. Wood glue with painter’s tape as a clamp holds each tray square while it dries.',
+      mdf: 'Seal MDF edges with a thin coat of glue or primer before painting so they don’t swell.'
+    }[S.kind] || '';
+    $('#steps').innerHTML = [
+      'Cut every piece in the cut list. Pencil the tray letter on each piece as it comes off the sheet.',
+      'For each tray, glue the two long walls onto the long edges of the base, standing on top of it.',
+      'Glue the two short walls onto the base, between the long walls. The outside of the tray now matches the size in the tray table.',
+      'Dry-fit all trays in the box before the glue cures fully, and sand or trim anything that binds.',
+      (stacked.length ? 'Stacked trays sit directly on the walls of the tray below. Cut a finger notch in the lower tray’s wall, or add a ribbon pull, so the top one lifts out.' : 'For trays you need to lift out, cut a shallow finger notch in one short wall, or add a ribbon pull under the tray.'),
+      kindTip
+    ].filter(Boolean).map(x => '<li>' + esc(x) + '</li>').join('');
+    updatePdfNote();
+  }
+
+  // ---------- PDF cutting template ----------
+  const PAPER_LABELS = {letter: 'Letter', a4: 'A4', tabloid: 'Tabloid', a3: 'A3', full: 'full-size'};
+  let downloads = null;
+  const pdfPaper = () => S.pdfPaper || (isMM() ? 'a4' : 'letter');
+  function materialText(){
+    const m = MATERIALS.find(x => x.id === S.materialId);
+    return (!m || m.id === 'custom') ? fmt(+S.t) + ' ' + S.unit + ' material' : m.label;
+  }
+  function updatePdfNote(){
+    const paper = pdfPaper();
+    $('#pdf-paper').value = paper;
+    const plan = lastR ? InsertPlanner.templatePlan(lastR, {unit: S.unit, paper}) : null;
+    $('#pdf-btn').disabled = !plan;
+    if(!plan){ $('#pdf-note').textContent = 'Add components and a sheet size to make a template.'; return; }
+    $('#pdf-note').textContent = plan.full
+      ? plan.pages + (plan.pages === 1 ? ' page' : ' pages') + ' at ' + dims(lastR.SL, lastR.SW) + ' ' + S.unit + ', one per sheet, at actual size. For a print shop or large-format printer.'
+      : 'Prints at actual size on ' + plan.pages + ' ' + PAPER_LABELS[paper] + ' pages: a cover with a scale check, an overview of each sheet, then the pages to tape together and glue onto the board.';
+  }
+  $('#pdf-paper').addEventListener('change', e => { S.pdfPaper = e.target.value; save(); updatePdfNote(); $('#pdf-msg').textContent = ''; });
+
+  // Inside Claude the viewer's downloads capability saves the file; on a standalone site the browser downloads it directly.
+  const inClaude = !!(window.claude && window.claude.use);
+  const browserSave = {save: ({filename, data}) => {
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return Promise.resolve({status: 'saved'});
+  }};
+  if(!inClaude){
+    downloads = browserSave;
+    $('#pdf-tools').hidden = false;
+  } else {
+    window.claude.use('downloads').then(d => {
+      downloads = d;
+      $('#pdf-tools').hidden = !d;
+      $('#pdf-unavailable').hidden = !!d;
+    }, () => { $('#pdf-unavailable').hidden = false; });
+  }
+
+  $('#pdf-btn').addEventListener('click', async () => {
+    const msg = $('#pdf-msg');
+    if(!downloads || !lastR) return;
+    if(!window.jspdf || !window.jspdf.jsPDF){ msg.textContent = 'The PDF tool didn’t load. Reload the page and try again.'; return; }
+    const paper = pdfPaper();
+    let blob;
+    try{
+      const doc = InsertPlanner.buildTemplate(window.jspdf.jsPDF, lastR, {unit: S.unit, paper, materialLabel: materialText(), paperLabel: PAPER_LABELS[paper]});
+      blob = doc.output('blob');
+    }catch(e){ msg.textContent = 'Couldn’t build the PDF: ' + ((e && e.message) || e); return; }
+    msg.textContent = inClaude ? 'Confirm the download in the prompt.' : 'Downloading...';
+    const btn = $('#pdf-btn');
+    btn.disabled = true;
+    try{
+      await downloads.save({filename: 'insert-cutting-template-' + (paper === 'full' ? 'full-size' : paper) + '.pdf', data: blob});
+      msg.textContent = 'Saved. Print at 100% scale and check the bars on the first page with a ruler.';
+    }catch(e){
+      const code = e && e.code;
+      if(code === 'declined') msg.textContent = 'Download canceled.';
+      else if(code === 'rate_limited') msg.textContent = 'A save prompt is already open. Finish that one, then try again.';
+      else if(code === 'bad_request' || code === 'transform_error') msg.textContent = 'The PDF couldn’t be handed over. Try again.';
+      else { $('#pdf-tools').hidden = true; $('#pdf-unavailable').hidden = false; }
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // copy
+  $('#copy-cut').addEventListener('click', () => {
+    const R = lastR; if(!R || !R.groups.length) return;
+    const u = S.unit;
+    const lines = ['Qty\tLength (' + u + ')\tWidth (' + u + ')\tUsed for'].concat(R.groups.map(g => g.qty + '\t' + fmt(g.a) + '\t' + fmt(g.b) + '\t' + g.parts.join(', ')));
+    const text = lines.join('\n');
+    const showFallback = () => { const ta = $('#copy-fallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); };
+    try{
+      navigator.clipboard.writeText(text).then(() => {
+        const t = $('#copy-toast'); t.hidden = false; setTimeout(() => { t.hidden = true; }, 1600);
+      }, showFallback);
+    }catch(e){ showFallback(); }
+  });
+
+  syncInputs();
+  update();
+})();
+</script>
+</body>
+</html>
