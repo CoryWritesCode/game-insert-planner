@@ -143,6 +143,19 @@ svg text{font-family:var(--f-mono)}
 svg .t-letter{font-family:var(--f-display);font-weight:800;fill:var(--piece-ink)}
 svg .t-name{fill:var(--piece-ink)}
 svg .t-mat{fill:var(--mat-ink)}
+svg .badge{fill:var(--piece-ink)}
+svg .t-badge{fill:var(--foam);font-weight:600}
+svg .hl-rect{fill:none;stroke:var(--mat-ink);stroke-width:3;pointer-events:none}
+svg .lid{stroke:var(--mat-ink);stroke-width:1;stroke-dasharray:4 3}
+svg .floor{stroke:var(--mat-ink);stroke-width:2.5}
+.colg{cursor:pointer;outline:none}
+svg .colg:focus-visible .wall{stroke:var(--mat-ink);stroke-width:3}
+.plan-info{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:16px;align-items:start;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+@media (max-width:560px){.plan-info{grid-template-columns:minmax(0,1fr)}.pi-fig{max-width:260px}}
+.pi-head{font-weight:600;margin:0 0 10px}
+.pi-list{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:10px}
+.pi-list li{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.pi-list li > div{min-width:0}
 @media (prefers-reduced-motion:no-preference){.btn,.icon-btn{transition:filter .15s,color .15s,border-color .15s}}
 </style>
 </head>
@@ -228,6 +241,7 @@ svg .t-mat{fill:var(--mat-ink)}
         <div class="card-head"><div><h2 id="h-plan">Layout from above</h2><p class="sub">Trays as they sit in the box. Letters match the tray table and the cut list.</p></div></div>
         <div class="figure" id="plan"></div>
         <div class="legend" id="plan-legend"></div>
+        <div class="plan-info" id="plan-info"></div>
       </section>
 
       <section class="card" aria-labelledby="h-trays">
@@ -1005,33 +1019,138 @@ window.InsertPlanner = (function(){
     for(const g of R.gaps){
       s += '<rect class="gap" fill="url(#hatch-plan)" x="' + (o + g.x) + '" y="' + (o + g.y) + '" width="' + g.w + '" height="' + g.h + '"/>';
     }
-    for(const col of R.cols){
-      const x = o + col.x, y = o + col.y, w = col.w, h = col.h;
-      const top = col.trays[col.trays.length - 1];
+    const nameOf = tr => tr.spare ? 'Spare tray' : tr.name;
+    R.cols.forEach((col, i) => {
+      const x = o + col.x, y = o + col.y, w = col.w, h = col.h, n = col.trays.length;
+      const top = col.trays[n - 1];
+      const stack = col.trays.slice().reverse();
+      const tip = stack.map(tr => tr.letter + ': ' + nameOf(tr) + ', inside ' + fmt(tr.cav.l) + ' × ' + fmt(tr.cav.w) + ' × ' + fmt(tr.cav.d) + ' ' + S.unit + ' deep').join('\n') + (n > 1 ? '\n(top to bottom)' : '');
+      const aria = (n > 1 ? 'Stack of ' + n + ', top to bottom: ' : 'Tray ') + stack.map(tr => tr.letter + ' ' + nameOf(tr)).join(', ');
+      s += '<g class="colg" data-i="' + i + '" tabindex="0" role="button" aria-label="' + esc(aria) + '"><title>' + esc(tip) + '</title>';
       s += '<rect class="wall" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/>';
       s += '<rect class="cav" x="' + (x + t) + '" y="' + (y + t) + '" width="' + Math.max(0, w - 2*t) + '" height="' + Math.max(0, h - 2*t) + '"/>';
-      const iw = w - 2*t, ih = h - 2*t;
-      const lf = Math.max(fs*0.5, Math.min(fs*1.7, Math.min(iw, ih)*0.4));
-      const nm = fitText(top.spare ? 'spare' : top.name, iw*0.9, fs*0.62, fs*0.4);
-      const below = col.trays.length > 1 ? col.trays.slice(0, -1).reverse().map(x => x.letter).join(', ') : '';
-      const sub = below ? fitText('over ' + below, iw*0.9, fs*0.55, fs*0.38) : null;
-      const total = lf + (nm ? nm.f*1.35 : 0) + (sub ? sub.f*1.3 : 0);
-      if(total > ih*1.02){
-        s += '<text class="t-letter" x="' + (x + w/2) + '" y="' + (y + h/2 + lf*0.36) + '" font-size="' + lf + '" text-anchor="middle">' + top.letter + '</text>';
-        continue;
+      const iw = Math.max(0, w - 2*t), ih = Math.max(0, h - 2*t);
+      const blk = labelBlock(nameOf(top), iw*0.9, ih*0.9, fs);
+      const total = blk.lf + blk.lines.length*blk.f*1.25;
+      let cy = y + h/2 - total/2 + blk.lf*0.8;
+      s += '<text class="t-letter" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + blk.lf + '" text-anchor="middle">' + top.letter + '</text>';
+      cy += blk.lf*0.1;
+      blk.lines.forEach(line => {
+        cy += blk.f*1.25;
+        s += '<text class="t-name" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + blk.f + '" text-anchor="middle">' + esc(line) + '</text>';
+      });
+      const fb = fs*0.5, badge = n + ' high', bw = badge.length*fb*0.62 + fb*0.9, bh = fb*1.5;
+      if(n > 1 && iw > bw*1.4 && ih > bh*2.2){
+        const bx = x + w - t - bw - fb*0.3, by = y + t + fb*0.3;
+        s += '<rect class="badge" x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="' + bh/2 + '"/>';
+        s += '<text class="t-badge" x="' + (bx + bw/2) + '" y="' + (by + bh*0.7) + '" font-size="' + fb + '" text-anchor="middle">' + badge + '</text>';
       }
-      let cy = y + h/2 - total/2 + lf*0.8;
-      s += '<text class="t-letter" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + lf + '" text-anchor="middle">' + top.letter + '</text>';
-      if(nm){ cy += nm.f*1.35 + lf*0.08; s += '<text class="t-name" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + nm.f + '" text-anchor="middle">' + esc(nm.s) + '</text>'; }
-      if(sub){ cy += sub.f*1.3; s += '<text class="t-name" x="' + (x + w/2) + '" y="' + cy + '" font-size="' + sub.f + '" text-anchor="middle" opacity=".75">' + esc(sub.s) + '</text>'; }
-    }
+      s += '</g>';
+    });
     s += '<rect class="boxwall" x="0" y="0" width="' + bl + '" height="' + bw + '"/>';
     const lfs = fs*0.75;
     s += '<text class="t-mat" x="' + (bl/2) + '" y="' + (-pad*0.32) + '" font-size="' + lfs + '" text-anchor="middle">' + fmt(bl) + ' ' + S.unit + '</text>';
     s += '<text class="t-mat" x="' + (-pad*0.32) + '" y="' + (bw/2) + '" font-size="' + lfs + '" text-anchor="middle" transform="rotate(-90 ' + (-pad*0.32) + ' ' + (bw/2) + ')">' + fmt(bw) + ' ' + S.unit + '</text>';
+    s += '<rect id="plan-hl" class="hl-rect" x="0" y="0" width="0" height="0"/>';
     s += '</svg>';
     return s;
   }
+
+  function chunkWord(w, n){
+    if(w.length <= n || n < 3) return [w];
+    const out = [];
+    for(let i = 0; i < w.length; i += n - 1) out.push(w.slice(i, i + n - 1));
+    return out.map((p, i) => i < out.length - 1 ? p + '-' : p);
+  }
+  function wrapWords(str, n){
+    const parts = String(str).split(/\s+/).filter(Boolean).flatMap(w => chunkWord(w, n));
+    const lines = [];
+    let cur = '';
+    for(const p of parts){
+      if(!cur) cur = p;
+      else if((cur + ' ' + p).length <= n) cur += ' ' + p;
+      else { lines.push(cur); cur = p; }
+    }
+    if(cur) lines.push(cur);
+    return lines;
+  }
+  // Letter plus the name wrapped onto as many lines as fit; the font shrinks before anything is cut.
+  function labelBlock(name, availW, availH, fs){
+    const lf = Math.max(fs*0.5, Math.min(fs*1.7, Math.min(availW, availH)*0.4));
+    const per = f => Math.max(3, Math.floor(availW/(f*0.6)));
+    for(let f = fs*0.7; f >= fs*0.36; f *= 0.9){
+      const lines = wrapWords(name, per(f));
+      if(lines.length <= 4 && lf + lines.length*f*1.25 <= availH) return {lf, f, lines};
+    }
+    const f = fs*0.36, max = Math.floor((availH - lf)/(f*1.25));
+    if(max < 1) return {lf, f, lines: []};
+    let lines = wrapWords(name, per(f));
+    if(lines.length > max){ lines = lines.slice(0, max); lines[max - 1] = lines[max - 1].slice(0, -1) + '…'; }
+    return {lf, f, lines};
+  }
+
+  // Side view of one spot: trays stacked from the box floor, drawn at true depth.
+  function elevationSVG(col, R){
+    const Lw = Math.max(col.w, col.h), H = +S.box.h, t = R.t;
+    const M = Math.max(Lw, H), pad = M*0.07, fs = M/10, lab = fs*3.4;
+    const x0 = -pad, y0 = -pad - fs*0.9, vw = Lw + 2*pad + lab, vh = H + 2*pad + fs*0.9;
+    let s = '<svg viewBox="' + x0 + ' ' + y0 + ' ' + vw + ' ' + vh + '" class="k-' + S.kind + '" role="img" aria-label="Side view of this spot in the box">';
+    s += hatchDef('hatch-elev', M/40);
+    s += '<rect class="mat" x="' + x0 + '" y="' + y0 + '" width="' + vw + '" height="' + vh + '"/>';
+    s += gridLines(x0, y0, x0 + vw, y0 + vh);
+    let yb = H;
+    col.trays.forEach(tr => {
+      const y = yb - tr.Z;
+      s += '<rect class="wall" x="0" y="' + y + '" width="' + Lw + '" height="' + tr.Z + '"/>';
+      s += '<rect class="cav" x="' + t + '" y="' + y + '" width="' + Math.max(0, Lw - 2*t) + '" height="' + Math.max(0, tr.Z - t) + '"/>';
+      const lf = Math.min(fs, (tr.Z - t)*0.7);
+      if(lf > fs*0.25) s += '<text class="t-letter" x="' + (Lw/2) + '" y="' + (y + (tr.Z - t)/2 + lf*0.36) + '" font-size="' + lf + '" text-anchor="middle">' + tr.letter + '</text>';
+      s += '<text class="t-mat" x="' + (Lw + pad*0.6) + '" y="' + (y + tr.Z/2 + fs*0.22) + '" font-size="' + fs*0.6 + '">' + fmt(tr.cav.d) + ' deep</text>';
+      yb = y;
+    });
+    if(yb > 0.01){
+      s += '<rect class="gap" fill="url(#hatch-elev)" x="0" y="0" width="' + Lw + '" height="' + yb + '"/>';
+      const rf = Math.min(fs*0.55, yb*0.6);
+      if(rf > fs*0.2) s += '<text class="t-mat" x="' + (Lw/2) + '" y="' + (yb/2 + rf*0.36) + '" font-size="' + rf + '" text-anchor="middle">board &amp; rules</text>';
+      s += '<text class="t-mat" x="' + (Lw + pad*0.6) + '" y="' + (yb/2 + fs*0.22) + '" font-size="' + fs*0.6 + '">' + fmt(yb) + '</text>';
+    }
+    s += '<line class="lid" x1="' + (-pad*0.6) + '" y1="0" x2="' + (Lw + pad*0.6) + '" y2="0"/>';
+    s += '<line class="floor" x1="' + (-pad*0.6) + '" y1="' + H + '" x2="' + (Lw + pad*0.6) + '" y2="' + H + '"/>';
+    s += '<text class="t-mat" x="0" y="' + (-fs*0.3) + '" font-size="' + fs*0.55 + '">lid</text>';
+    s += '</svg>';
+    return s;
+  }
+
+  function renderPlanInfo(R){
+    const col = R.cols[selCol];
+    if(!col){ $('#plan-info').innerHTML = ''; return; }
+    const n = col.trays.length, list = col.trays.slice().reverse();
+    const above = (+S.box.h) - col.z;
+    const pos = j => n < 2 ? '' : '<span class="muted small"> · ' + (j === 0 ? 'top' : j === n - 1 ? 'bottom, on the box floor' : 'middle') + '</span>';
+    $('#plan-info').innerHTML =
+      '<div class="pi-fig figure">' + elevationSVG(col, R) + '</div>' +
+      '<div class="pi-text"><p class="pi-head">' + (n > 1 ? n + ' trays stacked in this spot' : 'Tray ' + col.trays[0].letter) + ' <span class="muted">· side view</span></p>' +
+      '<ol class="pi-list">' + list.map((tr, j) =>
+        '<li><span class="tag' + (tr.spare ? ' spare' : '') + '">' + tr.letter + '</span><div><strong>' + esc(tr.spare ? 'Spare tray' : tr.name) + '</strong>' + pos(j) +
+        '<div class="muted small">Inside ' + fmt(tr.cav.l) + ' × ' + fmt(tr.cav.w) + ' × ' + fmt(tr.cav.d) + ' ' + S.unit + ' deep' +
+        (tr.need ? '. Holds ' + fmt(tr.need.l) + ' × ' + fmt(tr.need.w) + ' × ' + fmt(tr.need.h) + ' ' + S.unit + '.' : '. Empty, fills a gap.') + '</div></div></li>'
+      ).join('') + '</ol>' +
+      (above > 0.01 ? '<p class="muted small" style="margin:0">' + fmt(above) + ' ' + S.unit + ' above the trays for the board and rulebook.</p>' : '') +
+      '</div>';
+  }
+
+  function selectCol(i, force){
+    if(!lastR || !lastR.cols[i]) return;
+    if(i === selCol && !force) return;
+    selCol = i;
+    const col = lastR.cols[i], o = lastR.offset, hl = $('#plan-hl');
+    if(hl){ hl.setAttribute('x', o + col.x); hl.setAttribute('y', o + col.y); hl.setAttribute('width', col.w); hl.setAttribute('height', col.h); }
+    renderPlanInfo(lastR);
+  }
+  ['pointerover', 'focusin', 'click'].forEach(ev => $('#plan').addEventListener(ev, e => {
+    const g = e.target.closest && e.target.closest('.colg');
+    if(g) selectCol(+g.dataset.i);
+  }));
 
   function sheetSVG(R, sheet, idx){
     const SL = R.SL, SW = R.SW, k = R.kerf;
@@ -1063,6 +1182,7 @@ window.InsertPlanner = (function(){
 
   // ---------- results ----------
   let lastR = null;
+  let selCol = -1;
   function update(){
     save();
     const R = InsertPlanner.compute(S);
@@ -1104,10 +1224,16 @@ window.InsertPlanner = (function(){
         '<span><span class="sw k-' + S.kind + '"></span>Walls, ' + fmt(R.t) + ' ' + u + ' thick</span>' +
         '<span><span class="sw cavsw k-' + S.kind + '"></span>Inside of tray</span>' +
         (R.gaps.length ? '<span><span class="sw gapsw"></span>Gap left open (' + R.gaps.length + ')</span>' : '') +
-        (stacked.length ? '<span>“over B” means this tray sits on top of tray B</span>' : '');
+        '<span>Hover over or tap a tray for its full name and a side view of what’s stacked there.</span>';
+      if(!R.cols[selCol]){
+        const firstStack = R.cols.findIndex(c => c.trays.length > 1);
+        selCol = firstStack >= 0 ? firstStack : 0;
+      }
+      selectCol(selCol, true);
     } else {
       $('#plan').innerHTML = '<p class="empty" style="color:var(--mat-ink)">Enter the box size to see the layout.</p>';
       $('#plan-legend').innerHTML = '';
+      $('#plan-info').innerHTML = '';
     }
 
     // tray table
