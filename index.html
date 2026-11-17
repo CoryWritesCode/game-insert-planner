@@ -114,6 +114,10 @@ td.qty{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:
 .chip{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);margin-left:6px;white-space:nowrap}
 .sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
 .sheet-cap{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-top:6px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.cuts{margin:8px 0 0;padding:0;list-style:none;font-size:13px;line-height:1.45;font-variant-numeric:tabular-nums}
+.cuts li{padding:5px 0;border-top:1px solid var(--line)}
+.cuts .rip-n{font-weight:600;margin-right:6px}
+.cuts .left{color:var(--muted)}
 .export{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;padding:12px;margin-bottom:14px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
 .export .field{flex:1 1 220px}
 .export .btn{flex:none}
@@ -135,6 +139,7 @@ svg .cav{stroke:var(--piece-edge);stroke-width:1;stroke-opacity:.45}
 svg .gap{stroke:var(--hatch);stroke-width:1;stroke-dasharray:3 3}
 svg .hl{stroke:var(--hatch);stroke-width:1}
 svg .sheet{stroke:var(--mat-ink);stroke-width:1.5}
+svg .rip{stroke:var(--mat-ink);stroke-width:1.5;stroke-dasharray:7 4}
 .k-foam .wall,.k-foam .piece{fill:var(--foam)} .k-foam .cav{fill:var(--foam-cav)}
 .k-ply .wall,.k-ply .piece{fill:var(--ply)} .k-ply .cav{fill:var(--ply-cav)}
 .k-mdf .wall,.k-mdf .piece{fill:var(--mdf)} .k-mdf .cav{fill:var(--mdf-cav)}
@@ -373,6 +378,88 @@ window.InsertPlanner = (function(){
 
   const maxArea = free => free.reduce((m, f) => Math.max(m, f.w*f.h), 0);
 
+  // Strip cutting. A sheet is first ripped into strips that run its full length, then each strip is cut
+  // across into columns, and a column holds one piece or a few pieces stacked across the strip. Every cut
+  // runs edge to edge of the board it splits, so there are no stopped cuts, and identical pieces sit side
+  // by side. Sizes include kerf. `slack` is how much of a strip's height or a column's length a shorter
+  // piece may leave unused before it gets a strip of its own.
+  function stripPack(items, SLk, SWk, rotate, slack){
+    const strips = [];
+    for(const it of items){
+      const orients = [[it.w, it.h]];
+      if(rotate && Math.abs(it.w - it.h) > EPS) orients.push([it.h, it.w]);
+      const ok = orients.filter(([len, ht]) => len <= SLk + EPS && ht <= SWk + EPS);
+      if(!ok.length) continue;
+      let best = null;
+      const take = c => { if(!best || c.cost < best.cost - EPS) best = c; };
+      for(const [len, ht] of ok){
+        for(const st of strips){
+          if(ht > st.h + EPS) continue;
+          for(const col of st.cols){
+            if(len <= col.w + EPS && col.used + ht <= st.h + EPS && col.w - len <= slack*col.w + EPS) take({st, col, len, ht, cost: (col.w - len)*ht});
+          }
+          if(st.used + len <= SLk + EPS && st.h - ht <= slack*st.h + EPS) take({st, len, ht, cost: (st.h - ht)*len});
+        }
+      }
+      if(!best){
+        const [len, ht] = ok.slice().sort((p, q) => p[1] - q[1])[0];
+        const st = {h: ht, used: 0, cols: []};
+        strips.push(st);
+        best = {st, len, ht};
+      }
+      let col = best.col;
+      if(!col){
+        col = {x: best.st.used, w: best.len, used: 0, items: []};
+        best.st.cols.push(col);
+        best.st.used += best.len;
+      }
+      col.items.push({ref: it.ref, dy: col.used, w: best.len, h: best.ht});
+      col.used += best.ht;
+    }
+    return strips;
+  }
+
+  // Best-fit decreasing: strips onto sheets, stacked from the top edge.
+  function stripsToSheets(strips, SWk){
+    const sheets = [];
+    for(const st of strips.slice().sort((p, q) => q.h - p.h)){
+      let sh = null, left = Infinity;
+      for(const s of sheets){
+        const l = SWk - s.used - st.h;
+        if(l >= -EPS && l < left){ sh = s; left = l; }
+      }
+      if(!sh){ sh = {used: 0, strips: []}; sheets.push(sh); }
+      st.y = sh.used;
+      sh.strips.push(st);
+      sh.used += st.h;
+    }
+    return sheets;
+  }
+
+  // Tries a few orders and slack levels. Ranks by sheets, then material used (the strips' total height,
+  // since the rest of the last sheet comes off as one full-length offcut), then number of cuts.
+  function cutSheets(items, SLk, SWk, rotate){
+    const sorts = [
+      (p, q) => (q.h - p.h) || (q.w - p.w),
+      (p, q) => (q.w - p.w) || (q.h - p.h),
+      (p, q) => (q.w*q.h - p.w*p.h) || (q.h - p.h)
+    ];
+    let best = null;
+    for(const srt of sorts){
+      for(const slack of [0, 0.15, 0.3, 0.5, 0.75, 1]){
+        const strips = stripPack(items.slice().sort(srt), SLk, SWk, rotate, slack);
+        const sheets = stripsToSheets(strips, SWk);
+        const height = strips.reduce((s, st) => s + st.h, 0);
+        const cuts = strips.reduce((s, st) => s + 1 + st.cols.reduce((m, c) => m + c.items.length, 0), 0);
+        const score = [sheets.length, height, cuts];
+        const better = !best || score[0] < best.score[0] ||
+          (score[0] === best.score[0] && (score[1] < best.score[1] - EPS || (Math.abs(score[1] - best.score[1]) <= EPS && score[2] < best.score[2])));
+        if(better) best = {sheets, score};
+      }
+    }
+    return best ? best.sheets : [];
+  }
+
   function letter(n){
     let s = ''; n++;
     while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1)/26); }
@@ -425,7 +512,7 @@ window.InsertPlanner = (function(){
     const unit = S.unit, fmt = makeFmt(unit), U = unit;
     const t = +S.t || 0, c = Math.max(0, +S.clearance || 0);
     const warnings = [];
-    const res = {warnings, cols: [], trays: [], gaps: [], pieces: [], groups: [], sheets: [], unplaced: [], stackUsed: false, offset: c/2, sheetUse: 0};
+    const res = {warnings, cols: [], trays: [], gaps: [], pieces: [], groups: [], sheets: [], cutPlan: [], unplaced: [], stackUsed: false, offset: c/2, sheetUse: 0};
     const UL = (+S.box.l || 0) - c, UW = (+S.box.w || 0) - c, UH = (+S.box.h || 0) - (+S.topReserve || 0);
     Object.assign(res, {UL, UW, UH, t});
     if(!(S.box.l > 0 && S.box.w > 0 && S.box.h > 0)){ warnings.push('Enter the inside length, width and depth of the box.'); return res; }
@@ -563,12 +650,14 @@ window.InsertPlanner = (function(){
           warnings.push(big.length + (big.length === 1 ? ' piece is' : ' pieces are') + ' larger than one sheet (' + big.map(b => b.ref.tray + ' ' + b.ref.part).join(', ') + '). Use a bigger sheet or join two pieces.');
           items = items.filter(fitsSheet);
         }
-        items.sort((x, y) => (y.w*y.h - x.w*x.h) || (y.w - x.w));
-        while(items.length && res.sheets.length < 200){
-          const r = guillotine(SL + k, SW + k, items, !!S.rotate);
-          if(!r.placed.length) break;
-          res.sheets.push(r.placed);
-          items = r.unplaced;
+        res.cutPlan = cutSheets(items, SL + k, SW + k, !!S.rotate);
+        for(const sh of res.cutPlan){
+          for(const st of sh.strips){
+            for(const col of st.cols){
+              col.items = col.items.map(it => ({ref: it.ref, x: col.x, y: st.y + it.dy, w: it.w, h: it.h}));
+            }
+          }
+          res.sheets.push([].concat(...sh.strips.map(st => [].concat(...st.cols.map(c => c.items)))));
         }
         const used = res.pieces.reduce((s, p) => s + p.a*p.b, 0);
         res.sheetUse = res.sheets.length ? used/(res.sheets.length*SL*SW) : 0;
@@ -583,39 +672,124 @@ window.InsertPlanner = (function(){
   const PAPERS = {letter: [215.9, 279.4], a4: [210, 297], tabloid: [279.4, 431.8], a3: [297, 420]};
   const SHORT = {'base': 'base', 'long wall': 'long', 'short wall': 'short'};
 
-  function overlapArea(q, reg){
-    const w = Math.min(q.x + q.w, reg.x1) - Math.max(q.x, reg.x0);
-    const h = Math.min(q.y + q.h, reg.y1) - Math.max(q.y, reg.y0);
-    return w > 0 && h > 0 ? w*h : 0;
+  // Cutting order for each sheet, in the user's unit: rip each strip, then cut it across into pieces.
+  function stripCuts(st, k){
+    const r4 = v => Math.round(v*1e4);
+    const cuts = [];
+    for(const c of st.cols){
+      const exact = c.items.length === 1 && Math.abs(c.items[0].h - st.h) < EPS && Math.abs(c.items[0].w - c.w) < EPS;
+      const then = exact ? null : c.items.map(p => [p.w - k, p.h - k]);
+      const labels = c.items.map(p => p.ref.tray + ' ' + SHORT[p.ref.part]);
+      const key = r4(c.w) + '|' + (then ? then.map(([w, h]) => r4(w) + 'x' + r4(h)).join(',') : '');
+      const prev = cuts[cuts.length - 1];
+      if(prev && prev.key === key){ prev.qty++; prev.labels.push(...labels); }
+      else cuts.push({key, len: c.w - k, qty: 1, labels, then});
+    }
+    return cuts;
+  }
+
+  function cutSteps(R){
+    return R.cutPlan.map(sh => ({
+      offcut: Math.max(0, R.SW - sh.used),
+      strips: sh.strips.map((st, j) => ({n: j + 1, width: st.h - R.kerf, cuts: stripCuts(st, R.kerf)}))
+    }));
+  }
+
+  // "A long ×2, B short"
+  function tally(labels){
+    const m = new Map();
+    labels.forEach(l => m.set(l, (m.get(l) || 0) + 1));
+    return [...m.entries()].map(([l, n]) => n > 1 ? l + ' ×' + n : l).join(', ');
+  }
+
+  // "270 ×2 (A long, B long)" or "120 split into 115 × 30 + 110 × 25 (C short, D short)".
+  // Words instead of arrows: the PDF's built-in font has no arrow glyph.
+  function cutText(cut, fmt){
+    let s = fmt(cut.len) + (cut.qty > 1 ? ' ×' + cut.qty : '');
+    if(cut.then) s += (cut.then.length > 1 ? ' split into ' : ' trimmed to ') + cut.then.map(([w, h]) => fmt(w) + ' × ' + fmt(h)).join(' + ');
+    return s + ' (' + tally(cut.labels) + ')';
+  }
+
+  const CARD_HEAD = 6, CARD_GAP = 5;
+
+  // A column longer than the page is the one case where a piece has to be split across cards.
+  function chop(c, tw){
+    const n = Math.ceil(c.w/tw - 1e-9);
+    return Array.from({length: n}, (_, i) => ({x0: c.x + c.w*i/n, x1: c.x + c.w*(i + 1)/n}));
+  }
+
+  // Splits one strip along its length only where it is cut across.
+  function stripSegments(st, tw){
+    const segs = [];
+    let cur = null;
+    const flush = () => { if(cur) segs.push(cur); cur = null; };
+    for(const c of st.cols){
+      if(c.w > tw + 1e-9){ flush(); segs.push(...chop(c, tw)); continue; }
+      if(cur && c.x + c.w - cur.x0 <= tw + 1e-9){ cur.x1 = c.x + c.w; continue; }
+      flush();
+      cur = {x0: c.x, x1: c.x + c.w};
+    }
+    flush();
+    return segs;
+  }
+
+  // First-fit decreasing height: cards of the same strip width share rows, and a short card can drop into
+  // any earlier row with room, so a page fills before the next one starts.
+  function shelfPack(cards, tw, th){
+    const pages = [], used = [], shelves = [];
+    const sorted = cards.slice().sort((p, q) => (q.y1 - q.y0) - (p.y1 - p.y0));
+    for(const cd of sorted){
+      const w = cd.x1 - cd.x0, h = cd.y1 - cd.y0 + CARD_HEAD;
+      let sf = shelves.find(s => s.x + w <= tw + 1e-9 && h <= s.h + 1e-9);
+      if(!sf){
+        let pi = used.findIndex(u => u + CARD_GAP + h <= th + 1e-9);
+        if(pi < 0){ pages.push([]); used.push(-CARD_GAP); pi = pages.length - 1; }
+        sf = {page: pi, y: used[pi] + CARD_GAP, h, x: 0};
+        used[pi] += h + CARD_GAP;
+        shelves.push(sf);
+      }
+      cd.page = sf.page;
+      pages[sf.page].push({cd, px: sf.x, py: sf.y});
+      sf.x += w + CARD_GAP;
+    }
+    return pages;
+  }
+
+  // Strip templates: a piece stays whole on one card unless it is longer (or its strip wider) than the
+  // printable page. Cards are packed onto pages in cutting order.
+  function cardPages(sheets, tw, th){
+    const cards = [];
+    sheets.forEach((sh, si) => sh.strips.forEach((st, j) => {
+      const bands = Math.max(1, Math.ceil(st.h/(th - CARD_HEAD) - 1e-9));
+      const segs = stripSegments(st, tw);
+      const of = segs.length*bands;
+      segs.forEach((sg, n) => {
+        for(let b = 0; b < bands; b++) cards.push({si, strip: j, n: n*bands + b, of, x0: sg.x0, x1: sg.x1, y0: st.y + st.h*b/bands, y1: st.y + st.h*(b + 1)/bands});
+      });
+    }));
+    const pages = shelfPack(cards, tw, th);
+    const inside = (q, cd) => q.x >= cd.x0 - 1e-6 && q.x + q.w <= cd.x1 + 1e-6 && q.y >= cd.y0 - 1e-6 && q.y + q.h <= cd.y1 + 1e-6;
+    const split = sheets.reduce((n, sh, si) => n + sh.rects.filter(q => !cards.some(cd => cd.si === si && inside(q, cd))).length, 0);
+    return {cards, pages, split};
   }
 
   function templatePlan(R, o){
     const f = o.unit === 'mm' ? 1 : 25.4;
     const SL = R.SL*f, SW = R.SW*f, k = R.kerf*f, M = 12;
     if(!R.sheets || !R.sheets.length || !(SL > 0 && SW > 0)) return null;
-    const rectsOf = sh => sh.map(p => ({x: p.x*f, y: p.y*f, w: p.w*f - k, h: p.h*f - k, ref: p.ref}));
-    if(o.paper === 'full'){
-      return {full: true, M, pw: SL + 2*M, ph: SW + 2*M + 14, SL, SW, pages: R.sheets.length,
-        sheets: R.sheets.map(sh => ({rects: rectsOf(sh), tiles: []}))};
-    }
+    const sheets = R.sheets.map((sh, si) => ({
+      rects: sh.map(p => ({x: p.x*f, y: p.y*f, w: p.w*f - k, h: p.h*f - k, ref: p.ref})),
+      strips: R.cutPlan[si].strips.map(st => ({y: st.y*f, h: st.h*f - k, cols: st.cols.map(c => ({x: c.x*f, w: c.w*f - k}))}))
+    }));
+    if(o.paper === 'full') return {full: true, f, M, pw: SL + 2*M, ph: SW + 2*M + 14, SL, SW, pages: sheets.length, sheets, split: 0};
     const [a, b] = PAPERS[o.paper] || PAPERS.letter;
-    const count = (w, h) => Math.ceil(SL/(w - 2*M) - 1e-9)*Math.ceil(SW/(h - 2*M) - 1e-9);
-    const land = count(b, a) < count(a, b);
-    const pw = land ? b : a, ph = land ? a : b, tw = pw - 2*M, th = ph - 2*M;
-    const cols = Math.ceil(SL/tw - 1e-9), rows = Math.ceil(SW/th - 1e-9);
-    const sheets = R.sheets.map(sh => {
-      const rects = rectsOf(sh);
-      const tiles = [];
-      for(let i = 0; i < rows*cols; i++){
-        const r = Math.floor(i/cols), c = i % cols;
-        const reg = {x0: c*tw, y0: r*th, x1: Math.min((c + 1)*tw, SL), y1: Math.min((r + 1)*th, SW), r, c, name: letter(r) + (c + 1)};
-        reg.used = rects.some(q => overlapArea(q, reg) > 0.01);
-        tiles.push(reg);
-      }
-      return {rects, tiles};
-    });
-    const pages = 1 + sheets.reduce((s, sh) => s + 1 + sh.tiles.filter(t => t.used).length, 0);
-    return {full: false, M, pw, ph, SL, SW, rows, cols, pages, sheets};
+    const portrait = cardPages(sheets, a - 2*M, b - 2*M - 4);
+    const landscape = cardPages(sheets, b - 2*M, a - 2*M - 4);
+    const land = landscape.pages.length < portrait.pages.length ||
+      (landscape.pages.length === portrait.pages.length && landscape.split < portrait.split);
+    const cp = land ? landscape : portrait;
+    return {full: false, f, M, pw: land ? b : a, ph: land ? a : b, SL, SW, sheets,
+      cards: cp.cards, cardPages: cp.pages, split: cp.split, pages: 1 + sheets.length + cp.pages.length};
   }
 
   function clippedRect(doc, q, reg, X, Y){
@@ -659,13 +833,24 @@ window.InsertPlanner = (function(){
     }
   }
 
+  // Draws the part of a sheet inside `reg` (sheet mm) at scale s: offcuts gray, the full-length strip
+  // lines, then each piece with its label.
   function drawRegion(ctx, plan, sh, reg, ox, oy, s, o){
     const doc = ctx.doc;
     const X = v => ox + (v - reg.x0)*s, Y = v => oy + (v - reg.y0)*s;
+    const fill = (q, g) => {
+      const x0 = Math.max(q.x, reg.x0), y0 = Math.max(q.y, reg.y0), x1 = Math.min(q.x + q.w, reg.x1), y1 = Math.min(q.y + q.h, reg.y1);
+      if(x1 - x0 <= 1e-6 || y1 - y0 <= 1e-6) return;
+      doc.setFillColor(g);
+      doc.rect(X(x0), Y(y0), (x1 - x0)*s, (y1 - y0)*s, 'F');
+    };
+    fill({x: 0, y: 0, w: plan.SL, h: plan.SW}, 232);
+    sh.rects.forEach(q => fill(q, 255));
     doc.setDrawColor(0);
     doc.setLineWidth(o.edgeW);
     clippedRect(doc, {x: 0, y: 0, w: plan.SL, h: plan.SW}, reg, X, Y);
     doc.setLineWidth(o.cutW);
+    sh.strips.forEach(st => clippedRect(doc, {x: 0, y: st.y, w: plan.SL, h: st.h}, reg, X, Y));
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(25);
     for(const q of sh.rects){
@@ -681,6 +866,14 @@ window.InsertPlanner = (function(){
         : [[head, size, nm], [head, size], [head], [q.ref.tray]];
       placeLabel(doc, variants.filter(v => v.every(Boolean)), X((ix0 + ix1)/2), Y((iy0 + iy1)/2), (ix1 - ix0)*s, (iy1 - iy0)*s, o.maxPt, o.minPt);
     }
+  }
+
+  function stripNumbers(doc, sh, x, oy, s, pt){
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(pt); doc.setTextColor(60);
+    const capH = pt*0.3528;
+    sh.strips.forEach((st, j) => {
+      if(st.h*s >= capH) doc.text(String(j + 1), x, oy + (st.y + st.h/2)*s + capH*0.35, {align: 'right'});
+    });
   }
 
   function scaleBar(doc, x, y, len, tick, label){
@@ -702,74 +895,94 @@ window.InsertPlanner = (function(){
       doc.text(lines, M, y);
       y += lines.length*size*0.42 + (gap || 0);
     };
+    const strips = R.cutPlan.reduce((n, sh) => n + sh.strips.length, 0);
+    const tp = plan.cardPages.length;
     para('Game insert cutting template', 20, 'bold', 4);
     para('Material: ' + o.materialLabel, 10.5, 'normal', 1);
-    para(R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + ctx.fmt(R.SL) + ' × ' + ctx.fmt(R.SW) + ' ' + ctx.unit + ', ' + R.pieces.length + ' pieces, ' + ctx.fmt(R.kerf) + ' ' + ctx.unit + ' left between pieces for the blade.', 10.5, 'normal', 1);
-    para('Printed on ' + o.paperLabel + ' paper, ' + plan.rows + ' rows × ' + plan.cols + ' columns of pages per sheet. Pages with no pieces are left out.', 10.5, 'normal', 6);
+    para(R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + ctx.fmt(R.SL) + ' × ' + ctx.fmt(R.SW) + ' ' + ctx.unit + ', cut into ' + strips + ' full-length strips and then ' + R.pieces.length + ' pieces. ' + ctx.fmt(R.kerf) + ' ' + ctx.unit + ' is left between pieces for the blade.', 10.5, 'normal', 1);
+    para('Printed on ' + o.paperLabel + ' paper: a cutting plan for each sheet, then ' + tp + (tp === 1 ? ' page' : ' pages') + ' of strip templates (T1, T2...). ' +
+      (plan.split ? plan.split + (plan.split === 1 ? ' piece is' : ' pieces are') + ' bigger than a page, so ' + (plan.split === 1 ? 'it is' : 'they are') + ' split across two cards.' : 'Every piece fits whole on one card, so no piece has to be pieced together from two pages.'), 10.5, 'normal', 6);
     para('Check the scale first', 12, 'bold', 1);
     para('Print at 100% ("Actual size") with "Fit to page" turned off. Each bar below must measure exactly what it says. If it does not, fix the print settings before you print the rest.', 10, 'normal', 8);
     scaleBar(doc, M, y, 100, 10, '100 mm'); y += 11;
     scaleBar(doc, M, y, 101.6, 25.4, '4 in'); y += 12;
     para('How to use it', 12, 'bold', 1);
     [
-      'Print every page. Pages are named by row and column (A1, A2, B1...). The overview page for each sheet shows where its pages go.',
-      'Trim each page along its dashed frame wherever that edge meets another page. The notes in the margin say which page joins on each side.',
-      'Butt the pages together edge to edge and tape them on the back.',
-      'Line the thick sheet edge up with the edge of your board and stick the template down with spray adhesive or a glue stick. Repositionable spray mount peels off cleanly afterwards.',
-      'Cut on the waste side of each solid line so every piece keeps its full size. Each piece is labeled with its tray letter and part.',
-      'Build each tray: glue the long walls onto the base, then the short walls between them.'
+      'Cut the long lines with a ruler, not a template. Each sheet’s cutting plan lists its strips in order. Measure strip 1’s width from the top long edge at both ends, lay a long metal ruler on the marks and cut the full length of the board. Cut the next strip the same way from the fresh edge.',
+      'Cut out the template cards along their dashed frames. A strip’s cards are numbered (1 of 3, 2 of 3...). Glue them onto the strip end to end, card 1 at the left end, with each card’s top line on the strip’s top edge. Cards start and end on cut lines, so a small gap between two cards doesn’t move any cut.',
+      'Cut across the strip on each line with a square, edge to edge. Where a piece is narrower than its strip, a second line marks one more cut along it. Gray areas are offcuts.',
+      'Each piece is labeled with its tray letter and part. Build each tray: glue the long walls onto the base, then the short walls between them.'
     ].forEach((s, i) => para((i + 1) + '.  ' + s, 10, 'normal', 1.5));
     y += 4;
     para('Tray key', 12, 'bold', 1);
     R.trays.forEach(t => para(t.letter + '   ' + (t.spare ? 'Spare tray' : t.name) + '   (outside ' + ctx.fmt(Math.max(t.X, t.Y)) + ' × ' + ctx.fmt(Math.min(t.X, t.Y)) + ' × ' + ctx.fmt(t.Z) + ' ' + ctx.unit + ')', 9.5, 'normal', 0.6));
   }
 
-  function drawOverview(ctx, plan, sh, si){
-    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(20);
-    doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ': overview', M, M);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
-    const used = sh.tiles.filter(t => t.used);
-    const msg = 'Pages ' + used.map(t => t.name).join(', ') + ' (' + used.length + (used.length === 1 ? ' page' : ' pages') + '). Rows run top to bottom, columns left to right.' + (used.length < sh.tiles.length ? ' Gray areas have no pieces, so those pages are left out.' : '');
-    const wrapped = doc.splitTextToSize(msg, pw - 2*M);
-    doc.text(wrapped, M, M + 6);
-    const top = M + 6 + wrapped.length*4.2 + 4;
-    const s = Math.min((pw - 2*M)/plan.SL, (ph - top - M)/plan.SW);
-    doc.setFillColor(225);
-    sh.tiles.filter(t => !t.used).forEach(t => doc.rect(M + t.x0*s, top + t.y0*s, (t.x1 - t.x0)*s, (t.y1 - t.y0)*s, 'F'));
-    drawRegion(ctx, plan, sh, {x0: 0, y0: 0, x1: plan.SL, y1: plan.SW}, M, top, s, {edgeW: 0.5, cutW: 0.2, maxPt: 8, minPt: 4, brief: true});
-    doc.setDrawColor(120); doc.setLineWidth(0.25); doc.setLineDashPattern([1.5, 1.2], 0);
-    sh.tiles.forEach(t => doc.rect(M + t.x0*s, top + t.y0*s, (t.x1 - t.x0)*s, (t.y1 - t.y0)*s));
-    doc.setLineDashPattern([], 0);
-    doc.setFontSize(8); doc.setTextColor(110);
-    sh.tiles.forEach(t => doc.text(t.name, M + t.x0*s + 1.5, top + t.y0*s + 3.5));
+  function wrapRows(doc, rows, colW, oneLine){
+    return rows.map(r => {
+      const lines = doc.splitTextToSize(r.body, colW);
+      return {head: r.head, lines: oneLine && lines.length > 1 ? [lines[0] + ' …'] : lines};
+    });
   }
 
-  function drawTile(ctx, plan, sh, si, t, unit){
-    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph;
-    const fw = t.x1 - t.x0, fh = t.y1 - t.y0;
-    doc.setDrawColor(140); doc.setLineWidth(0.2); doc.setLineDashPattern([2, 1.5], 0);
-    doc.rect(M, M, fw, fh);
-    doc.setLineDashPattern([], 0);
-    doc.setDrawColor(0);
-    [[M, M, -1, -1], [M + fw, M, 1, -1], [M, M + fh, -1, 1], [M + fw, M + fh, 1, 1]].forEach(([x, y, dx, dy]) => {
-      doc.line(x, y, x + dx*4, y); doc.line(x, y, x, y + dy*4);
-    });
-    drawRegion(ctx, plan, sh, t, M, M, 1, {edgeW: 0.8, cutW: 0.35, maxPt: 13, minPt: 5});
+  function drawOverview(ctx, plan, sh, si){
+    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph, step = ctx.steps[si];
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(20);
+    doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ': cutting plan', M, M);
+    const tps = [...new Set(plan.cards.filter(c => c.si === si).map(c => c.page + 1))];
+    const tpText = tps.length === 1 ? 'template page T' + tps[0] : 'template pages T' + tps[0] + '–T' + tps[tps.length - 1];
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    const intro = doc.splitTextToSize('Rip the numbered strips off the top long edge one at a time, each measured from the fresh edge and cut the full length against a long ruler. Then cut each strip across into pieces, left to right. This sheet’s strip cards are on ' + tpText + '.', pw - 2*M);
+    doc.text(intro, M, M + 6);
+    const diagTop = M + 6 + intro.length*4.2 + 3;
+    doc.setFontSize(8.5);
+    const rows = step.strips.map(s => ({head: s.n + '.  ' + ctx.fmt(s.width) + ' ' + ctx.unit + ' strip', body: s.cuts.map(c => cutText(c, ctx.fmt)).join(',  ')}));
+    const headW = 34, colW = pw - 2*M - headW;
+    const lh = 3.7;
+    const offcut = step.offcut > (ctx.unit === 'mm' ? 10 : 0.4);
+    const heightOf = rs => rs.reduce((s, r) => s + r.lines.length*lh + 1.4, 0) + (offcut ? 6 : 0) + 8;
+    let table = wrapRows(doc, rows, colW, false);
+    if(ph - M - heightOf(table) - diagTop < 45) table = wrapRows(doc, rows, colW, true);
+    const ox = M + 6, maxW = pw - M - ox, maxH = Math.max(30, ph - M - heightOf(table) - diagTop);
+    const s = Math.min(maxW/plan.SL, maxH/plan.SW);
+    drawRegion(ctx, plan, sh, {x0: 0, y0: 0, x1: plan.SL, y1: plan.SW}, ox, diagTop, s, {edgeW: 0.5, cutW: 0.2, maxPt: 8, minPt: 4, brief: true});
+    stripNumbers(doc, sh, ox - 1.5, diagTop, s, 7.5);
+    let y = diagTop + plan.SW*s + 7;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20);
-    doc.text('Page ' + t.name, M, 6);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90);
-    doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ' · row ' + letter(t.r) + ', column ' + (t.c + 1), pw - M, 6, {align: 'right'});
-    const nb = (r, c) => sh.tiles.find(x => x.r === r && x.c === c && x.used);
-    const up = nb(t.r - 1, t.c), dn = nb(t.r + 1, t.c), lf = nb(t.r, t.c - 1), rt = nb(t.r, t.c + 1);
-    if(up) doc.text('top edge joins ' + up.name, M + fw/2, M - 2.5, {align: 'center'});
-    if(dn) doc.text('bottom edge joins ' + dn.name, M + fw/2, M + fh + 4.5, {align: 'center'});
-    if(lf){ const s = 'left edge joins ' + lf.name; doc.text(s, M - 2.5, M + fh/2 + doc.getTextWidth(s)/2, {angle: 90}); }
-    if(rt){ const s = 'right edge joins ' + rt.name; doc.text(s, M + fw + 4.5, M + fh/2 + doc.getTextWidth(s)/2, {angle: 90}); }
+    doc.text('Cutting order (' + ctx.unit + ')', M, y);
+    y += 5;
+    doc.setFontSize(8.5);
+    table.forEach(r => {
+      doc.setFont('helvetica', 'bold'); doc.text(r.head, M, y);
+      doc.setFont('helvetica', 'normal'); doc.text(r.lines, M + headW, y);
+      y += r.lines.length*lh + 1.4;
+    });
+    if(offcut){
+      doc.setTextColor(80);
+      doc.text('Left over: one offcut ' + ctx.fmt(ctx.R.SL) + ' × ' + ctx.fmt(step.offcut) + ' ' + ctx.unit + ', full length, for another project.', M, y + 2);
+    }
+  }
+
+  function drawCardPage(ctx, plan, page, pi, unit){
+    const doc = ctx.doc, M = plan.M, pw = plan.pw, ph = plan.ph;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20);
+    doc.text('Strip templates · page T' + (pi + 1) + ' of T' + plan.cardPages.length, M, 6);
+    for(const {cd, px, py} of page){
+      const ox = M + px, oy = M + py, w = cd.x1 - cd.x0, h = cd.y1 - cd.y0;
+      const tag = 'Sheet ' + (cd.si + 1) + ' · strip ' + (cd.strip + 1) + ' · ' + (cd.n + 1) + ' of ' + cd.of;
+      const where = ctx.fmt(cd.x0/plan.f) + '–' + ctx.fmt(cd.x1/plan.f) + ' ' + unit + ' from the left end';
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40);
+      const label = [tag + ' · ' + where, tag, (cd.si + 1) + '·' + (cd.strip + 1) + ' · ' + (cd.n + 1) + '/' + cd.of].find(l => doc.getTextWidth(l) <= w) || String(cd.n + 1);
+      doc.text(label, ox, oy + 4);
+      doc.setDrawColor(150); doc.setLineWidth(0.2); doc.setLineDashPattern([1.6, 1.2], 0);
+      doc.rect(ox, oy + CARD_HEAD, w, h);
+      doc.setLineDashPattern([], 0);
+      drawRegion(ctx, plan, plan.sheets[cd.si], cd, ox, oy + CARD_HEAD, 1, {edgeW: 0.8, cutW: 0.35, maxPt: 12, minPt: 5});
+    }
     if(unit === 'mm') scaleBar(doc, M, ph - 4, 50, 10, '50 mm');
     else scaleBar(doc, M, ph - 4, 50.8, 25.4, '2 in');
-    doc.setFontSize(7.5); doc.setTextColor(90);
-    doc.text('Print at 100%. Cut on the waste side of each line.', pw - M, ph - 4, {align: 'right'});
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(90);
+    doc.text('Print at 100%. Trim on the dashed frames; glue cards end to end, card 1 at the strip’s left end.', pw - M, ph - 4, {align: 'right'});
   }
 
   function buildFull(jsPDF, ctx, plan, o){
@@ -781,22 +994,24 @@ window.InsertPlanner = (function(){
       doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
       doc.text('Sheet ' + (si + 1) + ' of ' + plan.sheets.length + ' · ' + ctx.fmt(ctx.R.SL) + ' × ' + ctx.fmt(ctx.R.SW) + ' ' + ctx.unit + ' · ' + o.materialLabel, M, M - 4);
       drawRegion(ctx, plan, sh, {x0: 0, y0: 0, x1: plan.SL, y1: plan.SW}, M, M, 1, {edgeW: 0.8, cutW: 0.35, maxPt: 14, minPt: 5});
+      stripNumbers(doc, sh, M - 2, M, 1, 11);
       const fy = M + plan.SW + 9;
       scaleBar(doc, M, fy, 100, 10, '100 mm');
       scaleBar(doc, M + 125, fy, 101.6, 25.4, '4 in');
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(70);
-      doc.text(doc.splitTextToSize('Print at 100% (actual size) and check both bars with a ruler. Line the thick edge up with your board and cut on the waste side of each line.', plan.SL), M, fy + 6);
+      doc.text(doc.splitTextToSize('Print at 100% (actual size) and check both bars with a ruler. Line the thick edge up with your board. Cut the numbered strips the full length first, in order, then cut each strip across. Gray areas are offcuts.', plan.SL), M, fy + 6);
     });
     return doc;
   }
 
-  // Returns a jsPDF document: 1:1 scale, tiled onto printer paper or one page per sheet.
+  // Returns a jsPDF document at 1:1 scale: a cover, a cutting plan per sheet and strip templates on
+  // printer paper, or one full-size page per sheet.
   function buildTemplate(jsPDF, R, o){
     const plan = templatePlan(R, o);
     if(!plan) throw new Error('There is nothing to put on a template yet.');
     const names = {};
     R.trays.forEach(t => { names[t.letter] = t.spare ? 'Spare tray' : t.name; });
-    const ctx = {doc: null, R, fmt: makeFmt(o.unit), names, unit: o.unit};
+    const ctx = {doc: null, R, fmt: makeFmt(o.unit), names, unit: o.unit, steps: cutSteps(R)};
     if(plan.full) return buildFull(jsPDF, ctx, plan, o);
     const orient = plan.pw > plan.ph ? 'landscape' : 'portrait';
     const doc = new jsPDF({unit: 'mm', format: PAPERS[o.paper] || PAPERS.letter, orientation: 'portrait'});
@@ -805,15 +1020,15 @@ window.InsertPlanner = (function(){
     plan.sheets.forEach((sh, si) => {
       doc.addPage([plan.pw, plan.ph], orient);
       drawOverview(ctx, plan, sh, si);
-      sh.tiles.filter(t => t.used).forEach(t => {
-        doc.addPage([plan.pw, plan.ph], orient);
-        drawTile(ctx, plan, sh, si, t, o.unit);
-      });
+    });
+    plan.cardPages.forEach((page, pi) => {
+      doc.addPage([plan.pw, plan.ph], orient);
+      drawCardPage(ctx, plan, page, pi, o.unit);
     });
     return doc;
   }
 
-  return {compute, makeFmt, guillotine, templatePlan, buildTemplate};
+  return {compute, makeFmt, guillotine, templatePlan, buildTemplate, cutSteps, cutText, tally};
 })();
 </script>
 
@@ -1159,13 +1374,20 @@ window.InsertPlanner = (function(){
 
   function sheetSVG(R, sheet, idx){
     const SL = R.SL, SW = R.SW, k = R.kerf;
-    const M = Math.max(SL, SW), pad = M*0.03, fs = M/38;
+    const M = Math.max(SL, SW), pad = M*0.03, fs = M/38, gut = fs*1.4;
     const id = 'hatch-s' + idx;
-    let s = '<svg viewBox="' + (-pad) + ' ' + (-pad) + ' ' + (SL + 2*pad) + ' ' + (SW + 2*pad) + '" class="k-' + S.kind + '" role="img" aria-label="Sheet ' + (idx + 1) + ' cutting layout">';
+    let s = '<svg viewBox="' + (-pad - gut) + ' ' + (-pad) + ' ' + (SL + 2*pad + gut) + ' ' + (SW + 2*pad) + '" class="k-' + S.kind + '" role="img" aria-label="Sheet ' + (idx + 1) + ' cutting layout">';
     s += hatchDef(id, M/90);
-    s += '<rect class="mat" x="' + (-pad) + '" y="' + (-pad) + '" width="' + (SL + 2*pad) + '" height="' + (SW + 2*pad) + '"/>';
-    s += gridLines(-pad, -pad, SL + pad, SW + pad);
+    s += '<rect class="mat" x="' + (-pad - gut) + '" y="' + (-pad) + '" width="' + (SL + 2*pad + gut) + '" height="' + (SW + 2*pad) + '"/>';
+    s += gridLines(-pad - gut, -pad, SL + pad, SW + pad);
     s += '<rect class="sheet" fill="url(#' + id + ')" x="0" y="0" width="' + SL + '" height="' + SW + '"/>';
+    // Strip lines run the whole sheet, across offcuts too: each is one full-length cut.
+    R.cutPlan[idx].strips.forEach((st, j) => {
+      const yb = st.y + st.h - k;
+      if(yb < SW - 1e-6) s += '<line class="rip" x1="0" y1="' + yb + '" x2="' + SL + '" y2="' + yb + '"/>';
+      const nf = Math.min(fs*1.1, (st.h - k)*0.8);
+      s += '<text class="t-mat" x="' + (-pad*0.5) + '" y="' + (st.y + (st.h - k)/2 + nf*0.35) + '" font-size="' + nf + '" text-anchor="end" font-weight="600">' + (j + 1) + '</text>';
+    });
     for(const p of sheet){
       const w = p.w - k, h = p.h - k;
       s += '<rect class="piece" x="' + p.x + '" y="' + p.y + '" width="' + w + '" height="' + h + '"><title>' + esc(p.ref.tray + ' ' + p.ref.part + ': ' + dims(p.ref.a, p.ref.b)) + '</title></rect>';
@@ -1271,11 +1493,17 @@ window.InsertPlanner = (function(){
 
     // sheets
     if(R.sheets.length){
-      $('#sheet-sub').textContent = R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + dims(R.SL, R.SW) + ' ' + u + ', with ' + fmt(R.kerf) + ' ' + u + ' left between pieces for the blade. Hatched areas are offcuts.';
-      $('#sheets').innerHTML = R.sheets.map((sh, i) =>
-        '<figure style="margin:0"><div class="figure">' + sheetSVG(R, sh, i) + '</div>' +
-        '<figcaption class="sheet-cap"><span>Sheet ' + (i + 1) + ' of ' + R.sheets.length + '</span><span class="muted">' + sh.length + ' pieces · ' + Math.round(R.sheetUseEach[i]*100) + '% used</span></figcaption></figure>'
-      ).join('');
+      $('#sheet-sub').textContent = R.sheets.length + (R.sheets.length === 1 ? ' sheet' : ' sheets') + ' of ' + dims(R.SL, R.SW) + ' ' + u + ', with ' + fmt(R.kerf) + ' ' + u + ' left between pieces for the blade. ' +
+        'Cut the numbered strips first, each along the full length of the sheet, then cut each strip across into pieces. Every cut runs edge to edge, and matching pieces sit side by side. Hatched areas are offcuts.';
+      const steps = InsertPlanner.cutSteps(R);
+      $('#sheets').innerHTML = R.sheets.map((sh, i) => {
+        const st = steps[i];
+        const rows = st.strips.map(x => '<li><span class="rip-n">' + x.n + ' · ' + fmt(x.width) + ' ' + u + ' strip</span>' + esc(x.cuts.map(c => InsertPlanner.cutText(c, fmt)).join(', ')) + '</li>').join('');
+        const left = st.offcut > (isMM() ? 10 : 0.4) ? '<li class="left">Left over: one ' + dims(R.SL, st.offcut) + ' ' + u + ' offcut</li>' : '';
+        return '<figure style="margin:0"><div class="figure">' + sheetSVG(R, sh, i) + '</div>' +
+          '<figcaption class="sheet-cap"><span>Sheet ' + (i + 1) + ' of ' + R.sheets.length + '</span><span class="muted">' + st.strips.length + ' strips · ' + sh.length + ' pieces · ' + Math.round(R.sheetUseEach[i]*100) + '% used</span></figcaption>' +
+          '<ol class="cuts" aria-label="Cutting order for sheet ' + (i + 1) + ', lengths in ' + u + '">' + rows + left + '</ol></figure>';
+      }).join('');
     } else {
       $('#sheet-sub').textContent = '';
       $('#sheets').innerHTML = '<p class="empty">Sheet layouts appear once there is something to cut.</p>';
@@ -1288,7 +1516,7 @@ window.InsertPlanner = (function(){
       mdf: 'Seal MDF edges with a thin coat of glue or primer before painting so they don’t swell.'
     }[S.kind] || '';
     $('#steps').innerHTML = [
-      'Cut every piece in the cut list. Pencil the tray letter on each piece as it comes off the sheet.',
+      'Cut each sheet into its numbered strips first, measuring from the fresh edge each time and cutting the full length against a long ruler. Then cut each strip across into pieces. Pencil the tray letter on each piece as it comes off.',
       'For each tray, glue the two long walls onto the long edges of the base, standing on top of it.',
       'Glue the two short walls onto the base, between the long walls. The outside of the tray now matches the size in the tray table.',
       'Dry-fit all trays in the box before the glue cures fully, and sand or trim anything that binds.',
@@ -1314,7 +1542,8 @@ window.InsertPlanner = (function(){
     if(!plan){ $('#pdf-note').textContent = 'Add components and a sheet size to make a template.'; return; }
     $('#pdf-note').textContent = plan.full
       ? plan.pages + (plan.pages === 1 ? ' page' : ' pages') + ' at ' + dims(lastR.SL, lastR.SW) + ' ' + S.unit + ', one per sheet, at actual size. For a print shop or large-format printer.'
-      : 'Prints at actual size on ' + plan.pages + ' ' + PAPER_LABELS[paper] + ' pages: a cover with a scale check, an overview of each sheet, then the pages to tape together and glue onto the board.';
+      : 'Prints at actual size on ' + plan.pages + ' ' + PAPER_LABELS[paper] + ' pages: a cover with a scale check, a cutting plan for each sheet, then template cards to glue onto each strip. Pages only break where you cut, ' +
+        (plan.split ? 'except for ' + plan.split + (plan.split === 1 ? ' piece' : ' pieces') + ' bigger than a page.' : 'so every piece prints whole on one page.');
   }
   $('#pdf-paper').addEventListener('change', e => { S.pdfPaper = e.target.value; save(); updatePdfNote(); $('#pdf-msg').textContent = ''; });
 

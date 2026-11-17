@@ -7,8 +7,9 @@ Enter the inside of the box, the components you want to store and the sheet mate
 - lays out one open-top tray per component, stacking shallow trays only when needed and closing gaps so nothing slides around
 - lists every tray with its inside and outside size
 - builds a grouped cut list you can copy into a spreadsheet
-- nests the pieces onto your sheets, allowing for the blade kerf
-- downloads a full-size PDF cutting template: tiled onto Letter, A4, Tabloid or A3 pages with a scale check and page-join labels, or one full-size page per sheet for a print shop
+- nests the pieces onto your sheets with as little material as it can, allowing for the blade kerf. Each sheet is cut into full-length strips first, then each strip is cut across into pieces, so every cut runs edge to edge and matching pieces sit side by side. Whatever is left comes off as one full-length offcut.
+- lists the cutting order for each sheet: strip widths, then the lengths to cut from each strip
+- downloads a full-size PDF cutting template: a cutting plan per sheet plus template cards on Letter, A4, Tabloid or A3 paper, or one full-size page per sheet for a print shop. Cards break only where you cut, so a piece prints whole on one page unless it is bigger than the page.
 
 Inputs are saved in the browser's local storage. There is no backend.
 
