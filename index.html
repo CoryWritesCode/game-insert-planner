@@ -1094,7 +1094,9 @@ window.InsertPlanner = (function(){
 
   // Side view of one spot: trays stacked from the box floor, drawn at true depth.
   function elevationSVG(col, R){
-    const Lw = Math.max(col.w, col.h), H = +S.box.h, t = R.t;
+    // Fixed width tied to the box depth, not the tray length: the panel shows every side view at the
+    // same size, so depth keeps one scale from tray to tray. This view is about height; lengths are in the table.
+    const H = +S.box.h, Lw = H*1.6, t = R.t;
     const M = Math.max(Lw, H), pad = M*0.07, fs = M/10, lab = fs*3.4;
     const x0 = -pad, y0 = -pad - fs*0.9, vw = Lw + 2*pad + lab, vh = H + 2*pad + fs*0.9;
     let s = '<svg viewBox="' + x0 + ' ' + y0 + ' ' + vw + ' ' + vh + '" class="k-' + S.kind + '" role="img" aria-label="Side view of this spot in the box">';
