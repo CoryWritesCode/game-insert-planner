@@ -78,6 +78,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-vis
 .comp:first-child{border-top:0;padding-top:0}
 .name-row{grid-column:1/-1;display:flex;gap:8px;align-items:center}
 .name-row input{flex:1}
+.comp-open{grid-column:1/-1;font-size:13px;margin-top:2px}
+.comp-open input:not(:checked) + span small{display:none}
 .icon-btn{flex:none;width:32px;height:32px;border-radius:6px;border:1px solid var(--field-line);background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
 .icon-btn:hover{color:var(--warn);border-color:var(--warn)}
 .btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -125,6 +127,14 @@ td.qty{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:
 .btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
 .site-foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px;text-align:center}
 .site-foot a{color:var(--accent);font-weight:600;text-underline-offset:2px}
+.updates{margin-top:12px}
+.updates summary{display:inline-block;cursor:pointer;list-style:none;font-size:12.5px;padding:3px 12px;border:1px solid var(--field-line);border-radius:999px;color:var(--muted)}
+.updates summary::-webkit-details-marker{display:none}
+.updates summary:hover{color:var(--ink);border-color:var(--muted)}
+.updates[open] summary{color:var(--ink)}
+.log{max-width:560px;margin:14px auto 0;text-align:left;display:flex;flex-direction:column;gap:12px}
+.log h3{font-size:13px;font-family:var(--f-mono);font-weight:600;margin:0 0 4px;color:var(--ink)}
+.log ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 #copy-fallback{width:100%;min-height:120px;margin-top:10px;font-family:var(--f-mono);font-size:12.5px;background:var(--field);color:var(--ink);border:1px solid var(--field-line);border-radius:6px;padding:8px}
@@ -146,6 +156,7 @@ svg .rip{stroke:var(--mat-ink);stroke-width:1.5;stroke-dasharray:7 4}
 .sw.k-foam{background:var(--foam)} .sw.k-ply{background:var(--ply)} .sw.k-mdf{background:var(--mdf)}
 .sw.cavsw.k-foam{background:var(--foam-cav)} .sw.cavsw.k-ply{background:var(--ply-cav)} .sw.cavsw.k-mdf{background:var(--mdf-cav)}
 .sw.gapsw{background:var(--mat);border:1px dashed var(--hatch)}
+.sw.opensw{background:var(--mat);border:1.5px dashed var(--mat-ink)}
 svg text{font-family:var(--f-mono)}
 svg .t-letter{font-family:var(--f-display);font-weight:800;fill:var(--piece-ink)}
 svg .t-name{fill:var(--piece-ink)}
@@ -153,6 +164,7 @@ svg .t-mat{fill:var(--mat-ink)}
 svg .badge{fill:var(--piece-ink)}
 svg .t-badge{fill:var(--foam);font-weight:600}
 svg .hl-rect{fill:none;stroke:var(--mat-ink);stroke-width:3;pointer-events:none}
+svg .open{fill:none;stroke:var(--mat-ink);stroke-width:1.5;stroke-dasharray:6 4}
 svg .lid{stroke:var(--mat-ink);stroke-width:1;stroke-dasharray:4 3}
 svg .floor{stroke:var(--mat-ink);stroke-width:2.5}
 .colg{cursor:pointer;outline:none}
@@ -175,6 +187,12 @@ svg .colg:focus-visible .wall{stroke:var(--mat-ink);stroke-width:3}
 
   <div class="app">
     <aside class="inputs">
+      <section class="panel" aria-labelledby="h-ex">
+        <div class="panel-head"><h2 id="h-ex">Start from a game</h2></div>
+        <div class="field"><label for="game">Example</label><select id="game"></select></div>
+        <p class="hint" id="game-note">Loads a popular game's box and components and keeps your material and layout settings. Sizes come from published specs and insert makers, so measure your own copy before you cut.</p>
+      </section>
+
       <section class="panel" aria-labelledby="h-box">
         <div class="panel-head">
           <h2 id="h-box">Box</h2>
@@ -236,7 +254,6 @@ svg .colg:focus-visible .wall{stroke:var(--mat-ink);stroke-width:3}
           <label class="check"><input type="checkbox" id="fill"><span>Close the gaps<small>Widen trays into thin leftover strips and turn larger leftovers into spare trays, so nothing slides around.</small></span></label>
           <label class="check"><input type="checkbox" id="rotate"><span>Pieces may rotate on the sheet<small>Turn off to keep every piece's length along the sheet length (wood grain).</small></span></label>
         </div>
-        <div class="btn-row"><button type="button" class="btn ghost" id="load-example">Load the example</button></div>
       </section>
     </aside>
 
@@ -291,7 +308,37 @@ svg .colg:focus-visible .wall{stroke:var(--mat-ink);stroke-width:3}
       </section>
     </main>
   </div>
-  <footer class="site-foot">Made with &lt;3 by Cory from <a href="https://tothetable.games" target="_blank" rel="noopener">tothetable.games</a></footer>
+  <footer class="site-foot">
+    <div>Made with &lt;3 by Cory from <a href="https://tothetable.games" target="_blank" rel="noopener">tothetable.games</a></div>
+    <details class="updates">
+      <summary>Updates</summary>
+      <div class="log">
+        <section>
+          <h3><time datetime="2026-11-20">Nov 20, 2026</time></h3>
+          <ul>
+            <li>Start from one of ten popular games, from 7 Wonders to Wingspan.</li>
+            <li>Mark a component as an open space with no tray, for things that keep their shape, like Wingspan’s birdfeeder dice tower.</li>
+            <li>This list of updates.</li>
+          </ul>
+        </section>
+        <section>
+          <h3><time datetime="2026-11-17">Nov 17, 2026</time></h3>
+          <ul>
+            <li>Sheets are cut in full-length strips, with a numbered cutting order, and use less material.</li>
+            <li>PDF template cards break only on cut lines, so most pieces print whole.</li>
+            <li>The side view keeps one scale from tray to tray.</li>
+          </ul>
+        </section>
+        <section>
+          <h3><time datetime="2026-11-16">Nov 16, 2026</time></h3>
+          <ul>
+            <li>First release: tray layout, cut list, sheet layouts and a full-size PDF cutting template.</li>
+            <li>Tray names wrap to fit, and each spot shows a side view of its stacked trays.</li>
+          </ul>
+        </section>
+      </div>
+    </details>
+  </footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -471,8 +518,9 @@ window.InsertPlanner = (function(){
     const cols = [];
     for(const tr of sorted){
       let best = null;
-      if(stackOn){
+      if(stackOn && !tr.open){
         for(const col of cols){
+          if(col.trays[0].open) continue;
           if(!fits(tr.ox, tr.oy, col.w, col.h)) continue;
           if(col.z + tr.oz > UH + EPS) continue;
           const ratio = (tr.ox*tr.oy)/(col.w*col.h);
@@ -512,7 +560,7 @@ window.InsertPlanner = (function(){
     const unit = S.unit, fmt = makeFmt(unit), U = unit;
     const t = +S.t || 0, c = Math.max(0, +S.clearance || 0);
     const warnings = [];
-    const res = {warnings, cols: [], trays: [], gaps: [], pieces: [], groups: [], sheets: [], cutPlan: [], unplaced: [], stackUsed: false, offset: c/2, sheetUse: 0};
+    const res = {warnings, cols: [], spaces: [], trays: [], gaps: [], pieces: [], groups: [], sheets: [], cutPlan: [], unplaced: [], stackUsed: false, offset: c/2, sheetUse: 0};
     const UL = (+S.box.l || 0) - c, UW = (+S.box.w || 0) - c, UH = (+S.box.h || 0) - (+S.topReserve || 0);
     Object.assign(res, {UL, UW, UH, t});
     if(!(S.box.l > 0 && S.box.w > 0 && S.box.h > 0)){ warnings.push('Enter the inside length, width and depth of the box.'); return res; }
@@ -525,20 +573,22 @@ window.InsertPlanner = (function(){
       const nm = String(cp.name || '').trim() || 'Unnamed component';
       const L = +cp.l, W = +cp.w, H = +cp.h, q = Math.max(1, Math.round(+cp.qty || 1));
       if(!(L > 0 && W > 0 && H > 0)){ warnings.push('“' + nm + '” needs a length, width and height.'); return; }
+      // An open space has no tray of its own: the walls of the trays around it, or the box, hold it in.
+      const open = !!cp.open, wall = open ? 0 : 2*t, what = open ? 'an open space ' : 'a tray ';
       for(let k = 0; k < q; k++){
         const tr = {
           name: q > 1 ? nm + ' (' + (k + 1) + ' of ' + q + ')' : nm,
           need: {l: Math.max(L, W), w: Math.min(L, W), h: H},
-          ox: L + c + 2*t, oy: W + c + 2*t, oz: H + c + t, spare: false
+          ox: L + c + wall, oy: W + c + wall, oz: H + c + (open ? 0 : t), spare: false, open
         };
         if(tr.oz > UH + EPS){
           res.unplaced.push(tr);
-          warnings.push('“' + tr.name + '” needs a tray ' + fmt(tr.oz) + ' ' + U + ' tall, but only ' + fmt(UH) + ' ' + U + ' is available. Stand it on its side, or reduce the space above trays.');
+          warnings.push('“' + tr.name + '” needs ' + what + fmt(tr.oz) + ' ' + U + ' tall, but only ' + fmt(UH) + ' ' + U + ' is available. Stand it on its side, or reduce the space above trays.');
           continue;
         }
         if(!fits(tr.ox, tr.oy, UL, UW)){
           res.unplaced.push(tr);
-          warnings.push('“' + tr.name + '” needs a tray ' + fmt(tr.ox) + ' × ' + fmt(tr.oy) + ' ' + U + ', which is bigger than the box floor.');
+          warnings.push('“' + tr.name + '” needs ' + what + fmt(tr.ox) + ' × ' + fmt(tr.oy) + ' ' + U + ', which is bigger than the box floor.');
           continue;
         }
         need.push(tr);
@@ -560,7 +610,7 @@ window.InsertPlanner = (function(){
       }
     }
 
-    const cols = lay ? lay.placed.map(p => ({x: p.x, y: p.y, w: p.w, h: p.h, trays: p.ref.trays.slice(), spare: false})) : [];
+    let cols = lay ? lay.placed.map(p => ({x: p.x, y: p.y, w: p.w, h: p.h, trays: p.ref.trays.slice(), spare: false, open: p.ref.trays[0].open})) : [];
     const gaps = [];
     if(lay){
       for(const f of lay.free){
@@ -593,6 +643,8 @@ window.InsertPlanner = (function(){
       }
     }
 
+    res.spaces = cols.filter(col => col.open).map(col => ({x: col.x, y: col.y, w: col.w, h: col.h, name: col.trays[0].name, need: col.trays[0].need}));
+    cols = cols.filter(col => !col.open);
     cols.sort((a, b) => (Math.round(a.y*100) - Math.round(b.y*100)) || (a.x - b.x));
     let n = 0;
     for(const col of cols){
@@ -916,6 +968,7 @@ window.InsertPlanner = (function(){
     y += 4;
     para('Tray key', 12, 'bold', 1);
     R.trays.forEach(t => para(t.letter + '   ' + (t.spare ? 'Spare tray' : t.name) + '   (outside ' + ctx.fmt(Math.max(t.X, t.Y)) + ' × ' + ctx.fmt(Math.min(t.X, t.Y)) + ' × ' + ctx.fmt(t.Z) + ' ' + ctx.unit + ')', 9.5, 'normal', 0.6));
+    R.spaces.forEach(sp => para('–   ' + sp.name + '   (open space, ' + ctx.fmt(Math.max(sp.w, sp.h)) + ' × ' + ctx.fmt(Math.min(sp.w, sp.h)) + ' ' + ctx.unit + ', no tray)', 9.5, 'normal', 0.6));
   }
 
   function wrapRows(doc, rows, colW, oneLine){
@@ -1055,9 +1108,81 @@ window.InsertPlanner = (function(){
     {id:'custom', label:'Other (enter size)'}
   ];
 
+  // Inside sizes are worked out from insert makers' fit specs (outside size less the wall), and
+  // token, meeple and tile trays are estimates; card trays use real card sizes at 0.32 mm a card.
+  const GAMES = [
+    {id:'7wonders', name:'7 Wonders (2nd edition)', box:{l:295, w:295, h:74}, topReserve:18, comps:[
+      {name:'Age cards', l:100, w:65, h:17, qty:3},
+      {name:'Coins', l:90, w:60, h:30, qty:2},
+      {name:'Conflict tokens', l:90, w:50, h:25, qty:1}
+    ]},
+    {id:'azul', name:'Azul', box:{l:256, w:256, h:66}, topReserve:10, comps:[
+      {name:'Tiles', l:70, w:50, h:30, qty:5},
+      {name:'Factory displays', l:100, w:100, h:20, qty:1},
+      {name:'Score markers', l:60, w:40, h:20, qty:1},
+      {name:'Bag', l:100, w:70, h:15, qty:1}
+    ]},
+    {id:'carcassonne', name:'Carcassonne', box:{l:270, w:186, h:64}, topReserve:5, comps:[
+      {name:'Land tiles', l:45, w:45, h:50, qty:3},
+      {name:'River tiles', l:45, w:45, h:25, qty:1},
+      {name:'Meeples', l:60, w:40, h:20, qty:5}
+    ]},
+    {id:'catan', name:'Catan', box:{l:290, w:230, h:72}, topReserve:15, note:'The sea frame goes on top with the rulebook.', comps:[
+      {name:'Resource cards', l:80, w:54, h:7, qty:5},
+      {name:'Development cards', l:80, w:54, h:8, qty:1},
+      {name:'Player pieces', l:75, w:45, h:25, qty:4},
+      {name:'Terrain hexes', l:105, w:92, h:40, qty:1},
+      {name:'Numbers, robber and dice', l:70, w:50, h:20, qty:1}
+    ]},
+    {id:'everdell', name:'Everdell', box:{l:293, w:293, h:68}, topReserve:20, note:'The Ever Tree lies flat on top of the trays.', comps:[
+      {name:'Critter and construction cards', l:88, w:63, h:42, qty:1},
+      {name:'Forest and event cards', l:88, w:63, h:10, qty:1},
+      {name:'Resources', l:80, w:60, h:30, qty:4},
+      {name:'Workers', l:60, w:40, h:30, qty:4},
+      {name:'Point and occupied tokens', l:100, w:70, h:20, qty:1}
+    ]},
+    {id:'pandemic', name:'Pandemic', box:{l:302, w:220, h:40}, topReserve:10, note:'The box is shallow, so the trays are low.', comps:[
+      {name:'Player cards', l:88, w:63, h:20, qty:1},
+      {name:'Infection cards', l:88, w:63, h:16, qty:1},
+      {name:'Role and reference cards', l:88, w:63, h:5, qty:1},
+      {name:'Disease cubes', l:50, w:40, h:20, qty:4},
+      {name:'Pawns, stations and markers', l:90, w:50, h:22, qty:1}
+    ]},
+    {id:'splendor', name:'Splendor', box:{l:266, w:207, h:63}, topReserve:3, comps:[
+      {name:'Level 1 cards', l:88, w:63, h:13, qty:1},
+      {name:'Level 2 cards', l:88, w:63, h:10, qty:1},
+      {name:'Level 3 cards', l:88, w:63, h:7, qty:1},
+      {name:'Gem tokens', l:42, w:42, h:25, qty:6},
+      {name:'Noble tiles', l:62, w:62, h:21, qty:1}
+    ]},
+    {id:'terraforming', name:'Terraforming Mars', box:{l:291, w:291, h:67}, topReserve:14, comps:[
+      {name:'Project cards', l:88, w:63, h:34, qty:2},
+      {name:'Corporation and reference cards', l:88, w:63, h:9, qty:1},
+      {name:'Player cubes', l:60, w:45, h:20, qty:5},
+      {name:'Resource cubes', l:80, w:60, h:25, qty:3},
+      {name:'Greenery and city tiles', l:110, w:40, h:42, qty:1},
+      {name:'Ocean and special tiles', l:70, w:70, h:30, qty:1}
+    ]},
+    {id:'ttr', name:'Ticket to Ride', box:{l:294, w:294, h:69}, topReserve:10, comps:[
+      {name:'Train car cards', l:68, w:44, h:36, qty:1},
+      {name:'Destination tickets', l:68, w:44, h:10, qty:1},
+      {name:'Trains', l:90, w:60, h:25, qty:5},
+      {name:'Scoring markers', l:50, w:30, h:15, qty:1}
+    ]},
+    {id:'wingspan', name:'Wingspan', box:{l:290, w:290, h:72}, topReserve:15, note:'The birdfeeder stays built and lies on its side in an open space. Its size comes from replacement towers made for this box, so measure yours.', comps:[
+      {name:'Birdfeeder dice tower', l:175, w:85, h:55, qty:1, open:true},
+      {name:'Bird cards', l:87, w:57, h:28, qty:2},
+      {name:'Bonus and Automa cards', l:87, w:57, h:14, qty:1},
+      {name:'Food tokens', l:70, w:45, h:25, qty:5},
+      {name:'Eggs', l:90, w:60, h:25, qty:1},
+      {name:'Action cubes', l:80, w:50, h:20, qty:1},
+      {name:'Goal tiles and first-player token', l:80, w:60, h:15, qty:1}
+    ]}
+  ];
+
   function example(){
     return {
-      unit:'mm', box:{l:290, w:290, h:70}, topReserve:10,
+      unit:'mm', game:'sample', box:{l:290, w:290, h:70}, topReserve:10,
       materialId:'foam5', kind:'foam', t:5, clearance:1, kerf:0.5,
       sheetId:'foam2030', sheet:{l:762, w:508},
       stack:'auto', level:true, fill:true, rotate:true,
@@ -1077,7 +1202,7 @@ window.InsertPlanner = (function(){
       if(!raw) return null;
       const s = JSON.parse(raw);
       if(!s || !Array.isArray(s.comps) || !s.box || !s.sheet) return null;
-      return Object.assign(example(), s);
+      return Object.assign(example(), {game: ''}, s);
     }catch(e){ return null; }
   }
   function save(){ try{ localStorage.setItem(STORE, JSON.stringify(S)); }catch(e){} }
@@ -1108,6 +1233,7 @@ window.InsertPlanner = (function(){
     $('#stack-mode').value = S.stack;
     $('#level').checked = !!S.level;
     $('#fill').checked = !!S.fill;
+    syncGame();
     $('#rotate').checked = !!S.rotate;
     renderComps();
   }
@@ -1122,9 +1248,13 @@ window.InsertPlanner = (function(){
           '<div class="field"><label for="comp-' + i + '-' + k + '">' + labels[k] + '</label>' +
           '<input type="number" id="comp-' + i + '-' + k + '" data-k="' + k + '" min="0" step="' + (k === 'qty' ? '1' : 'any') + '" inputmode="' + (k === 'qty' ? 'numeric' : 'decimal') + '" value="' + (c[k] == null || c[k] === '' ? '' : (k === 'qty' ? c[k] : roundU(c[k]))) + '"></div>'
         ).join('') +
+        '<label class="check comp-open"><input type="checkbox" data-k="open"' + (c.open ? ' checked' : '') + '><span>Open space, no tray<small>For something that keeps its shape, like a dice tower. The trays around it hold it in place.</small></span></label>' +
       '</div>'
     ).join('') : '<p class="muted small" style="margin:0">No components yet. Add the first one below.</p>';
-    const total = S.comps.reduce((s, c) => s + Math.max(1, Math.round(+c.qty || 1)), 0);
+    countTrays();
+  }
+  function countTrays(){
+    const total = S.comps.reduce((s, c) => s + (c.open ? 0 : Math.max(1, Math.round(+c.qty || 1))), 0);
     $('#comp-count').textContent = S.comps.length ? total + (total === 1 ? ' tray' : ' trays') : '';
   }
 
@@ -1177,11 +1307,9 @@ window.InsertPlanner = (function(){
     const row = e.target.closest('.comp'); if(!row) return;
     const i = +row.dataset.i, k = e.target.dataset.k;
     if(k === 'name') S.comps[i].name = e.target.value;
+    else if(k === 'open') S.comps[i].open = e.target.checked;
     else { const v = parseFloat(e.target.value); S.comps[i][k] = isNaN(v) ? '' : v; }
-    if(k === 'qty'){
-      const total = S.comps.reduce((s, c) => s + Math.max(1, Math.round(+c.qty || 1)), 0);
-      $('#comp-count').textContent = total + (total === 1 ? ' tray' : ' trays');
-    }
+    if(k === 'qty' || k === 'open') countTrays();
     update();
   });
   $('#comps').addEventListener('click', e => {
@@ -1198,12 +1326,35 @@ window.InsertPlanner = (function(){
     update();
   });
   $('#clear-comps').addEventListener('click', () => {
+    S.game = ''; syncGame();
     S.comps = [{name:'', l:'', w:'', h:'', qty:1}];
     renderComps();
     const el = document.getElementById('comp-0-name'); if(el) el.focus();
     update();
   });
-  $('#load-example').addEventListener('click', () => { S = example(); fmt = InsertPlanner.makeFmt(S.unit); syncInputs(); update(); });
+  $('#game').innerHTML = '<option value="">Choose a game…</option>' +
+    GAMES.map(g => '<option value="' + g.id + '">' + esc(g.name) + '</option>').join('') +
+    '<option value="sample">Made-up sample game</option>';
+  function findGame(id){
+    return id === 'sample' ? Object.assign({name: 'the sample game'}, example()) : GAMES.find(x => x.id === id);
+  }
+  function syncGame(){
+    const g = findGame(S.game);
+    $('#game').value = g ? S.game : '';
+    $('#game-note').textContent = g
+      ? 'Loaded ' + g.name + '. ' + (g.note ? g.note + ' ' : '') + 'Measure your own copy before you cut.'
+      : 'Loads a popular game’s box and components and keeps your material and layout settings. Sizes come from published specs and insert makers, so measure your own copy before you cut.';
+  }
+  $('#game').addEventListener('change', e => {
+    const g = findGame(e.target.value);
+    if(!g) return;
+    const cv = v => roundU(fromMM(v));
+    S.game = e.target.value;
+    S.box = {l: cv(g.box.l), w: cv(g.box.w), h: cv(g.box.h)};
+    S.topReserve = cv(g.topReserve);
+    S.comps = g.comps.map(c => ({name: c.name, l: cv(c.l), w: cv(c.w), h: cv(c.h), qty: c.qty, open: !!c.open}));
+    syncInputs(); update();
+  });
 
   // ---------- drawing helpers ----------
   function gridLines(x0, y0, x1, y1){
@@ -1265,6 +1416,18 @@ window.InsertPlanner = (function(){
       }
       s += '</g>';
     });
+    for(const sp of R.spaces){
+      const x = o + sp.x, y = o + sp.y;
+      const blk = labelBlock(sp.name, sp.w*0.9, sp.h*0.8, fs);
+      let cy = y + sp.h/2 - blk.lines.length*blk.f*1.25/2 + blk.f*0.9;
+      s += '<g><title>' + esc(sp.name + ': open space, ' + fmt(Math.max(sp.w, sp.h)) + ' × ' + fmt(Math.min(sp.w, sp.h)) + ' ' + S.unit + ', no tray') + '</title>';
+      s += '<rect class="open" x="' + x + '" y="' + y + '" width="' + sp.w + '" height="' + sp.h + '"/>';
+      blk.lines.forEach(line => {
+        s += '<text class="t-mat" x="' + (x + sp.w/2) + '" y="' + cy + '" font-size="' + blk.f + '" text-anchor="middle">' + esc(line) + '</text>';
+        cy += blk.f*1.25;
+      });
+      s += '</g>';
+    }
     s += '<rect class="boxwall" x="0" y="0" width="' + bl + '" height="' + bw + '"/>';
     const lfs = fs*0.75;
     s += '<text class="t-mat" x="' + (bl/2) + '" y="' + (-pad*0.32) + '" font-size="' + lfs + '" text-anchor="middle">' + fmt(bl) + ' ' + S.unit + '</text>';
@@ -1429,7 +1592,8 @@ window.InsertPlanner = (function(){
     } else {
       st = '<div class="status ok">Everything fits. ' + real.length + (real.length === 1 ? ' tray' : ' trays') +
         (stacked.length ? ', with ' + stacked.length + ' stacked on top of others' : '') +
-        (spares.length ? ', plus ' + spares.length + ' spare' + (spares.length === 1 ? ' tray' : ' trays') + ' filling the gaps' : '') + '.</div>';
+        (spares.length ? ', plus ' + spares.length + ' spare' + (spares.length === 1 ? ' tray' : ' trays') + ' filling the gaps' : '') +
+        (R.spaces.length ? '. Left open for ' + R.spaces.map(sp => esc(sp.name)).join(', ') : '') + '.</div>';
     }
     $('#status').innerHTML = st;
 
@@ -1451,6 +1615,7 @@ window.InsertPlanner = (function(){
         '<span><span class="sw k-' + S.kind + '"></span>Walls, ' + fmt(R.t) + ' ' + u + ' thick</span>' +
         '<span><span class="sw cavsw k-' + S.kind + '"></span>Inside of tray</span>' +
         (R.gaps.length ? '<span><span class="sw gapsw"></span>Gap left open (' + R.gaps.length + ')</span>' : '') +
+        (R.spaces.length ? '<span><span class="sw opensw"></span>Open space, no tray</span>' : '') +
         '<span>Hover over or tap a tray for its full name and a side view of what’s stacked there.</span>';
       if(!R.cols[selCol]){
         const firstStack = R.cols.findIndex(c => c.trays.length > 1);
@@ -1475,7 +1640,10 @@ window.InsertPlanner = (function(){
             '<td class="num">' + fmt(tr.cav.l) + ' × ' + fmt(tr.cav.w) + ' × ' + fmt(tr.cav.d) + (roomy ? '<span class="chip">extra room</span>' : '') + '</td>' +
             '<td class="num">' + fmt(Math.max(tr.X, tr.Y)) + ' × ' + fmt(Math.min(tr.X, tr.Y)) + ' × ' + fmt(tr.Z) + '</td>' +
             '<td>' + (tr.below ? 'Tray ' + tr.below : 'Box floor') + '</td></tr>';
-        }).join('') + '</tbody>';
+        }).join('') +
+        R.spaces.map(sp => '<tr><td><span class="tag spare">–</span></td><td>' + esc(sp.name) + '<div class="muted small">Open space, no tray to cut</div></td>' +
+          '<td class="num">' + fmt(Math.max(sp.w, sp.h)) + ' × ' + fmt(Math.min(sp.w, sp.h)) + ' × ' + fmt(R.UH) + '</td><td class="num">–</td><td>Box floor</td></tr>').join('') +
+        '</tbody>';
     } else {
       $('#tray-table').innerHTML = '<tbody><tr><td class="empty">No trays yet.</td></tr></tbody>';
     }
